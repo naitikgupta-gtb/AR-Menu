@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#14110F" />
+  <title>Aura AR Bistro — Spatial 3D &amp; WebAR Menu</title>
+
+  <!-- Resource Hints for Rapid Mobile Asset Preloading -->
+  <link rel="preconnect" href="https://ajax.googleapis.com" crossorigin />
+  <link rel="preload" href="models/burger.glb" as="fetch" type="model/gltf-binary" crossorigin="anonymous" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Google <model-viewer> Web Component (Zero-App WebAR Engine) -->
+  <script
+    type="module"
+    src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"
+    onerror="window.__MODEL_VIEWER_SCRIPT_ERROR__ = true;">
+  </script>
+</head>
+<body>
+  <!-- Top Sticky Header -->
+  <header class="site-header">
+    <div class="brand-group">
+      <span class="brand-badge">SPATIAL GASTRONOMY</span>
+      <h1 class="brand-title">Aura AR Bistro</h1>
+    </div>
+    <div class="header-status">
+      <span id="ar-capability-pill" class="capability-pill" role="status">
+        <span class="status-dot"></span>
+        <span id="ar-capability-text">Checking WebAR...</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="hero-banner" aria-label="Featured Spatial Dining Experience">
+    <img src="images/hero_bistro.jpg" alt="Aura Bistro AR Table Preview" class="hero-img" />
+    <div class="hero-overlay">
+      <p class="hero-kicker">1:1 TRUE-SCALE TABLE PROJECTION</p>
+      <h2 class="hero-headline">Inspect Every Dish in 3D Before You Order</h2>
+      <p class="hero-subtext">
+        Tap any dish to launch interactive 3D orbital inspection or project life-size portions directly onto your table via AR Quick Look (.usdz) &amp; Scene Viewer (.glb).
+      </p>
+    </div>
+  </section>
+
+  <!-- Sticky Category Navigation -->
+  <nav class="category-nav" aria-label="Food Categories">
+    <div class="category-scroll" id="category-bar" role="tablist">
+      <!-- Dynamically populated by app.js -->
+    </div>
+  </nav>
+
+  <!-- Main Menu Grid -->
+  <main class="menu-container">
+    <section id="menu-grid" class="menu-grid" aria-live="polite">
+      <!-- Dish cards rendered via DocumentFragment in app.js -->
+    </section>
+  </main>
+
+  <!-- Interactive 3D & WebAR Viewer Modal -->
+  <div id="ar-modal" class="ar-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modal-dish-title">
+    <div class="ar-modal-backdrop" id="modal-backdrop"></div>
+
+    <div class="ar-modal-sheet">
+      <!-- Modal Top Bar -->
+      <div class="modal-topbar">
+        <div class="modal-title-wrap">
+          <span id="modal-dish-category" class="modal-category-tag">SIGNATURE</span>
+          <h2 id="modal-dish-title" class="modal-title">Dish Name</h2>
+        </div>
+        <button type="button" id="modal-close-btn" class="icon-btn" aria-label="Close 3D Viewer">
+          ✕
+        </button>
+      </div>
+
+      <!-- 3D / AR Viewport Container -->
+      <div class="viewer-stage" id="viewer-stage">
+        <!-- Primary Google <model-viewer> Component -->
+        <model-viewer
+          id="dish-model-viewer"
+          src=""
+          ios-src=""
+          poster=""
+          alt="Interactive 3D dish model"
+          ar
+          ar-modes="webxr scene-viewer quick-look"
+          ar-scale="fixed"
+          ar-placement="floor"
+          camera-controls
+          touch-action="pan-y"
+          auto-rotate
+          auto-rotate-delay="1000"
+          rotation-per-second="24deg"
+          shadow-intensity="1.2"
+          shadow-softness="0.85"
+          exposure="1.05"
+          environment-image="neutral"
+          interaction-prompt="auto"
+          loading="eager">
+
+          <!-- Custom Loading Progress Bar -->
+          <div class="progress-bar-container" slot="progress-bar" id="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+          </div>
+
+          <!-- Custom Native AR Launch Button inside <model-viewer> -->
+          <button slot="ar-button" class="native-ar-slot-btn" id="native-ar-slot-btn">
+            <span class="ar-icon">⬡</span> View in Room (1:1 AR)
+          </button>
+        </model-viewer>
+
+        <!-- Defensive Fallback & Direct .GLB 3D Orbital Canvas -->
+        <canvas id="fallback-3d-canvas" class="fallback-3d-canvas" aria-label="Interactive 3D Orbital Dish Turntable"></canvas>
+
+        <!-- Spatial HUD Overlays -->
+        <div class="spatial-hud-top">
+          <span class="hud-chip" id="hud-dimensions">Ø 18cm × H 11cm</span>
+          <span class="hud-chip" id="hud-asset-pair">burger.glb / .usdz</span>
+        </div>
+
+        <!-- Interactive 3D Controls Bar -->
+        <div class="viewer-controls-bar">
+          <button type="button" class="ctrl-pill active" id="btn-toggle-rotate">⟳ Auto-Orbit</button>
+          <button type="button" class="ctrl-pill" id="btn-toggle-explode"> layers X-Ray</button>
+          <button type="button" class="ctrl-pill" id="btn-toggle-scale">1:1 True Scale</button>
+          <button type="button" class="ctrl-pill" id="btn-cycle-lighting">☀ Warm Bistro</button>
+        </div>
+
+        <!-- Defensive Fallback Notice Banner -->
+        <div id="fallback-banner" class="fallback-banner" hidden>
+          <span id="fallback-banner-text">Interactive 3D GLB Orbital Engine Active — Drag to rotate, pinch/scroll to zoom</span>
+        </div>
+      </div>
+
+      <!-- Dish Details & Action Footer -->
+      <div class="modal-details">
+        <div class="modal-meta-row">
+          <span id="modal-dish-price" class="modal-price">$24.00</span>
+          <span id="modal-dish-calories" class="modal-calories">780 kcal • Prep 12m</span>
+        </div>
+        <p id="modal-dish-desc" class="modal-desc"></p>
+
+        <div class="allergen-row" id="modal-allergens"></div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-launch-ar-direct" class="btn-primary-ar">
+            <span class="ar-cube-glyph">⬡</span> Launch AR in Room
+          </button>
+          <button type="button" id="btn-reset-camera" class="btn-secondary-orbit">
+            Reset 3D View
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

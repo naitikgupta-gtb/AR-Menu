@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Aura AR Bistro</string>
+    <string name="bistro_subtitle">Spatial Gastronomy &amp; WebAR Menu</string>
+    <string name="tab_menu">AR Menu</string>
+    <string name="tab_webar_live">Live WebAR</string>
+    <string name="tab_code_studio">WebAR Code</string>
+    <string name="btn_view_3d_ar">Interactive 3D / View in Room</string>
+    <string name="btn_launch_scene_viewer">Launch Native AR Scene Viewer</string>
+    <string name="btn_add_to_table">Add to Table Order</string>
+    <string name="ar_fallback_notice">WebAR Hardware Fallback Active — Interactive 3D Orbital Turntable</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "Aura AR Bistro",
+  "description": "Self-hosted WebAR and interactive 3D restaurant menu powered by Google model-viewer, glTF 2.0 (.glb/.usdz) spatial assets, and defensive 3D orbital fallback.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
