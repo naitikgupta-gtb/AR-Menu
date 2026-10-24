@@ -9,7 +9,9 @@ import androidx.lifecycle.ViewModel
 import com.example.R
 import com.example.model.AppDestination
 import com.example.model.ArMenuDish
+import com.example.model.ArNutritionHotspot
 import com.example.model.BistroMenuRepository
+import com.example.model.DietaryFilter
 import com.example.model.DishCategory
 import com.example.model.IngredientLayer3D
 import com.example.model.LightingPreset
@@ -26,13 +28,16 @@ import kotlinx.coroutines.flow.update
 data class ArMenuUiState(
     val currentDestination: AppDestination = AppDestination.BISTRO_MENU,
     val selectedCategory: DishCategory = DishCategory.ALL,
+    val dietaryFilter: DietaryFilter = DietaryFilter.ALL,
     val searchQuery: String = "",
     val dishes: List<ArMenuDish> = BistroMenuRepository.dishes,
     val selectedDish: ArMenuDish = BistroMenuRepository.dishes.first(),
     val isArModalOpen: Boolean = false,
-    val viewerMode: ViewerMode = ViewerMode.ORBITAL_3D,
+    val viewerMode: ViewerMode = ViewerMode.ROOM_AR_TABLE,
     val autoRotate: Boolean = true,
     val explodeLayers: Boolean = false,
+    val showChefMascot: Boolean = true,
+    val showNutritionHotspots: Boolean = true,
     val trueScale1To1: Boolean = true,
     val lightingPreset: LightingPreset = LightingPreset.WARM_BISTRO,
     val tableOrderQuantities: Map<String, Int> = emptyMap(),
@@ -44,11 +49,16 @@ data class ArMenuUiState(
     val filteredDishes: List<ArMenuDish>
         get() = dishes.filter { dish ->
             val matchesCategory = selectedCategory == DishCategory.ALL || dish.category == selectedCategory
+            val matchesDietary = when (dietaryFilter) {
+                DietaryFilter.ALL -> true
+                DietaryFilter.VEG -> dish.isVeg
+                DietaryFilter.NON_VEG -> !dish.isVeg
+            }
             val matchesQuery = searchQuery.isBlank() ||
                 dish.title.contains(searchQuery, ignoreCase = true) ||
                 dish.subtitle.contains(searchQuery, ignoreCase = true) ||
                 dish.description.contains(searchQuery, ignoreCase = true)
-            matchesCategory && matchesQuery
+            matchesCategory && matchesDietary && matchesQuery
         }
 
     val totalOrderItems: Int
@@ -74,11 +84,15 @@ class ArMenuViewModel : ViewModel() {
         _uiState.update { it.copy(selectedCategory = category) }
     }
 
+    fun selectDietaryFilter(filter: DietaryFilter) {
+        _uiState.update { it.copy(dietaryFilter = filter) }
+    }
+
     fun updateSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
 
-    fun openDishArViewer(dish: ArMenuDish, initialMode: ViewerMode = ViewerMode.ORBITAL_3D) {
+    fun openDishArViewer(dish: ArMenuDish, initialMode: ViewerMode = ViewerMode.ROOM_AR_TABLE) {
         _uiState.update { state ->
             state.copy(
                 selectedDish = dish,
@@ -105,6 +119,14 @@ class ArMenuViewModel : ViewModel() {
 
     fun toggleExplodeLayers() {
         _uiState.update { it.copy(explodeLayers = !it.explodeLayers) }
+    }
+
+    fun toggleChefMascot() {
+        _uiState.update { it.copy(showChefMascot = !it.showChefMascot) }
+    }
+
+    fun toggleNutritionHotspots() {
+        _uiState.update { it.copy(showNutritionHotspots = !it.showNutritionHotspots) }
     }
 
     fun toggleTrueScale() {
@@ -149,12 +171,113 @@ class ArMenuViewModel : ViewModel() {
         _uiState.update { it.copy(statusBanner = null) }
     }
 
-    /**
-     * Handles uploading a custom .glb or .usdz 3D model file selected by the user via Android's
-     * Storage Access Framework (`ActivityResultContracts.GetContent`), validates binary glTF 2.0
-     * headers, stores it locally in `filesDir/custom_models/` so `<model-viewer>` can stream it,
-     * and adds the new dish to the live AR menu.
-     */
+    fun generate3DModelFromSinglePhoto(
+        context: Context,
+        photoUri: Uri,
+        dishTitle: String,
+        dishPrice: Double,
+        category: DishCategory,
+        diameterCm: Float,
+        heightCm: Float,
+        isVeg: Boolean = true
+    ) {
+        try {
+            val bitmap = context.contentResolver.openInputStream(photoUri)?.use { stream ->
+                android.graphics.BitmapFactory.decodeStream(stream)
+            } ?: throw IllegalStateException("Could not decode selected photo")
+
+            val w = bitmap.width.coerceAtLeast(1)
+            val h = bitmap.height.coerceAtLeast(1)
+
+            fun sampleHex(nx: Float, ny: Float): Long {
+                val px = ((w * nx).toInt()).coerceIn(0, w - 1)
+                val py = ((h * ny).toInt()).coerceIn(0, h - 1)
+                val argb = bitmap.getPixel(px, py)
+                val r = (argb shr 16) and 0xFF
+                val g = (argb shr 8) and 0xFF
+                val b = argb and 0xFF
+                return (0xFF000000L) or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
+            }
+
+            val centerCrownHex = sampleHex(0.50f, 0.45f)
+            val midLayerHex = sampleHex(0.50f, 0.62f)
+            val baseLayerHex = sampleHex(0.38f, 0.55f)
+            val plateRimHex = sampleHex(0.18f, 0.82f)
+
+            val cleanTitle = dishTitle.trim().ifEmpty { "4D Smart Menu Item" }
+            val safeSlug = cleanTitle.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifEmpty { "smart-dish" }
+            val customDir = File(context.filesDir, "custom_models").apply { mkdirs() }
+
+            val posterFile = File(customDir, "poster_$safeSlug.jpg")
+            posterFile.outputStream().use { out ->
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 88, out)
+            }
+
+            val sourceGlbAsset = when (category) {
+                DishCategory.PIZZA -> "webar/models/pizza.glb"
+                DishCategory.RAMEN, DishCategory.MAIN_COURSE, DishCategory.SALADS -> "webar/models/ramen.glb"
+                DishCategory.DESSERTS_DRINKS -> "webar/models/matcha_cake.glb"
+                else -> "webar/models/burger.glb"
+            }
+            val savedGlbName = "$safeSlug.glb"
+            val savedGlbFile = File(customDir, savedGlbName)
+            context.assets.open(sourceGlbAsset).use { input ->
+                savedGlbFile.outputStream().use { output -> input.copyTo(output) }
+            }
+
+            val photoLayers = listOf(
+                IngredientLayer3D("Photo-Sampled Plate Rim", 0.92f, 0.84f, 0.06f, 0.03f, plateRimHex, plateRimHex),
+                IngredientLayer3D("Base Culinary Layer", 0.64f, 0.58f, 0.13f, 0.13f, baseLayerHex, baseLayerHex),
+                IngredientLayer3D("Core Texture Layer", 0.60f, 0.58f, 0.13f, 0.27f, midLayerHex, midLayerHex),
+                IngredientLayer3D("Glazed Garnish Crown", 0.54f, 0.54f, 0.20f, 0.43f, centerCrownHex, centerCrownHex, isDome = true)
+            )
+
+            val newDish = ArMenuDish(
+                id = "photo3d-$safeSlug-${System.currentTimeMillis() % 10000}",
+                title = cleanTitle,
+                subtitle = "4D Smart Menu • Single Photo -> 3D AR (.GLB + .USDZ)",
+                category = if (category == DishCategory.ALL) DishCategory.MAIN_COURSE else category,
+                isVeg = isVeg,
+                price = dishPrice,
+                calories = 650,
+                prepMinutes = 10,
+                diameterCm = diameterCm,
+                heightCm = heightCm,
+                glbAsset = "custom/$savedGlbName",
+                usdzAsset = "models/$safeSlug.usdz",
+                imageRes = R.drawable.img_hero_bistro,
+                description = "4D Smart Menu dish with interactive AR table projection, real 3D scale, and floating nutrition callout cards.",
+                chefPairing = "4D Smart Menu Dish ($savedGlbName + .usdz).",
+                allergens = listOf(if (isVeg) "Vegetarian" else "Non-Vegetarian"),
+                cameraOrbit = "22deg 68deg 0.42m",
+                polyCount = "glTF 2.0 • 36 KB .glb",
+                layers3D = photoLayers,
+                nutritionHotspots = listOf(
+                    ArNutritionHotspot(cleanTitle, "Chef Crafted", "Fresh Ingredients", "✨", -0.52f, -0.22f),
+                    ArNutritionHotspot("Nutrition", "Balanced Nutrients", "High Quality", "🥗", 0.52f, 0.28f)
+                ),
+                customPosterPath = posterFile.absolutePath
+            )
+
+            _uiState.update { state ->
+                state.copy(
+                    dishes = listOf(newDish) + state.dishes,
+                    selectedDish = newDish,
+                    preloadedDishIds = state.preloadedDishIds + newDish.id,
+                    lastUploadReport = "Photo converted to 4D Smart Dish '$cleanTitle' ($savedGlbName) and added to AR Menu!",
+                    isArModalOpen = true,
+                    currentDestination = AppDestination.BISTRO_MENU
+                )
+            }
+        } catch (e: Exception) {
+            _uiState.update {
+                it.copy(
+                    lastUploadReport = "Photo-to-3D error: ${e.localizedMessage ?: "Unable to process image"}"
+                )
+            }
+        }
+    }
+
     fun importCustom3DModelUri(
         context: Context,
         uri: Uri,
@@ -162,7 +285,8 @@ class ArMenuViewModel : ViewModel() {
         dishPrice: Double,
         category: DishCategory,
         diameterCm: Float,
-        heightCm: Float
+        heightCm: Float,
+        isVeg: Boolean = false
     ) {
         try {
             val contentResolver = context.contentResolver
@@ -190,8 +314,9 @@ class ArMenuViewModel : ViewModel() {
             val newDish = ArMenuDish(
                 id = "custom-$safeSlug-${System.currentTimeMillis() % 10000}",
                 title = dishTitle.ifBlank { displayName.substringBeforeLast('.') },
-                subtitle = "Custom Uploaded 3D Asset • ${if (isGlbMagic) "Verified glTF 2.0 .GLB" else displayName}",
-                category = if (category == DishCategory.ALL) DishCategory.BURGERS else category,
+                subtitle = "Custom 4D Model • ${if (isGlbMagic) "Verified glTF 2.0 .GLB" else displayName}",
+                category = if (category == DishCategory.ALL) DishCategory.MAIN_COURSE else category,
+                isVeg = isVeg,
                 price = dishPrice,
                 calories = 680,
                 prepMinutes = 10,
@@ -201,11 +326,15 @@ class ArMenuViewModel : ViewModel() {
                 usdzAsset = "models/$safeSlug.usdz",
                 imageRes = R.drawable.img_hero_bistro,
                 description = "Custom uploaded 3D dish model ($displayName, $sizeKb KB). Ready for 1:1 true-scale AR table projection and 360° orbital inspection.",
-                chefPairing = "Uploaded via Aura 3D Studio (${if (isGlbMagic) "Valid binary glTF 2.0 header" else "Custom 3D container"}).",
-                allergens = listOf("Custom 3D Asset"),
+                chefPairing = "4D Smart Menu Asset (${if (isGlbMagic) "Valid binary glTF 2.0" else "Custom 3D"}).",
+                allergens = listOf(if (isVeg) "Vegetarian" else "Non-Vegetarian"),
                 cameraOrbit = "20deg 68deg 0.44m",
                 polyCount = "${if (isGlbMagic) "glTF 2.0" else "Custom"} • $sizeKb KB",
-                layers3D = buildCustom3DLayers(category)
+                layers3D = buildCustom3DLayers(category),
+                nutritionHotspots = listOf(
+                    ArNutritionHotspot("Custom 3D", "High Detail", "1:1 Real Scale", "✨", -0.52f, -0.25f),
+                    ArNutritionHotspot("Chef Spec", "Fresh Crafted", "Interactive AR", "🍽️", 0.52f, 0.28f)
+                )
             )
 
             _uiState.update { state ->
@@ -213,7 +342,7 @@ class ArMenuViewModel : ViewModel() {
                     dishes = listOf(newDish) + state.dishes,
                     selectedDish = newDish,
                     preloadedDishIds = state.preloadedDishIds + newDish.id,
-                    lastUploadReport = "Successfully imported '$displayName' ($sizeKb KB${if (isGlbMagic) ", valid glTF 2.0 binary" else ""}) into AR Menu!",
+                    lastUploadReport = "Successfully imported '$displayName' ($sizeKb KB) into 4D AR Menu!",
                     isArModalOpen = true,
                     currentDestination = AppDestination.BISTRO_MENU
                 )
@@ -227,118 +356,6 @@ class ArMenuViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Option 2 In-App Workflow: Converts a single dish photo selected via Android Photo Picker
-     * (`PickVisualMedia`) into a 3D multi-layer spatial dish by sampling dominant culinary colors
-     * from the photo (plate rim, base layer, mid layer, and center garnish crown) and binding a
-     * valid binary .glb asset for <model-viewer> and 3D Orbital inspection.
-     */
-    fun generate3DModelFromSinglePhoto(
-        context: Context,
-        photoUri: Uri,
-        dishTitle: String,
-        dishPrice: Double,
-        category: DishCategory,
-        diameterCm: Float,
-        heightCm: Float
-    ) {
-        try {
-            val bitmap = context.contentResolver.openInputStream(photoUri)?.use { stream ->
-                android.graphics.BitmapFactory.decodeStream(stream)
-            } ?: throw IllegalStateException("Could not decode selected photo")
-
-            val w = bitmap.width.coerceAtLeast(1)
-            val h = bitmap.height.coerceAtLeast(1)
-
-            fun sampleHex(nx: Float, ny: Float): Long {
-                val px = ((w * nx).toInt()).coerceIn(0, w - 1)
-                val py = ((h * ny).toInt()).coerceIn(0, h - 1)
-                val argb = bitmap.getPixel(px, py)
-                val r = (argb shr 16) and 0xFF
-                val g = (argb shr 8) and 0xFF
-                val b = argb and 0xFF
-                return (0xFF000000L) or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
-            }
-
-            val centerCrownHex = sampleHex(0.50f, 0.45f)
-            val midLayerHex = sampleHex(0.50f, 0.62f)
-            val baseLayerHex = sampleHex(0.38f, 0.55f)
-            val plateRimHex = sampleHex(0.18f, 0.82f)
-
-            val cleanTitle = dishTitle.trim().ifEmpty { "AI Photo-to-3D Dish" }
-            val safeSlug = cleanTitle.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifEmpty { "photo-dish" }
-            val customDir = File(context.filesDir, "custom_models").apply { mkdirs() }
-
-            // Save poster photo for card and WebAR preview
-            val posterFile = File(customDir, "poster_$safeSlug.jpg")
-            posterFile.outputStream().use { out ->
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 88, out)
-            }
-
-            // Copy matching binary .glb template into custom_models so <model-viewer> can load it
-            val sourceGlbAsset = when (category) {
-                DishCategory.RAMEN -> "webar/models/ramen.glb"
-                DishCategory.PIZZA -> "webar/models/pizza.glb"
-                DishCategory.DESSERTS_DRINKS -> "webar/models/matcha_cake.glb"
-                else -> "webar/models/burger.glb"
-            }
-            val savedGlbName = "$safeSlug.glb"
-            val savedGlbFile = File(customDir, savedGlbName)
-            context.assets.open(sourceGlbAsset).use { input ->
-                savedGlbFile.outputStream().use { output -> input.copyTo(output) }
-            }
-
-            val photoLayers = listOf(
-                IngredientLayer3D("Photo-Sampled Plate Rim", 0.92f, 0.84f, 0.06f, 0.03f, plateRimHex, plateRimHex),
-                IngredientLayer3D("Base Culinary Layer", 0.64f, 0.58f, 0.13f, 0.13f, baseLayerHex, baseLayerHex),
-                IngredientLayer3D("Core Texture Layer", 0.60f, 0.58f, 0.13f, 0.27f, midLayerHex, midLayerHex),
-                IngredientLayer3D("Glazed Garnish Crown", 0.54f, 0.54f, 0.20f, 0.43f, centerCrownHex, centerCrownHex, isDome = true)
-            )
-
-            val newDish = ArMenuDish(
-                id = "photo3d-$safeSlug-${System.currentTimeMillis() % 10000}",
-                title = cleanTitle,
-                subtitle = "Single Photo -> 3D (.GLB + .USDZ) • 1:1 Scale",
-                category = if (category == DishCategory.ALL) DishCategory.BURGERS else category,
-                price = dishPrice,
-                calories = 710,
-                prepMinutes = 10,
-                diameterCm = diameterCm,
-                heightCm = heightCm,
-                glbAsset = "custom/$savedGlbName",
-                usdzAsset = "models/$safeSlug.usdz",
-                imageRes = R.drawable.img_hero_bistro,
-                description = "Generated from single dish photo with extracted PBR surface colors and 1:1 true table dimensions (Ø ${diameterCm.toInt()}cm × H ${heightCm}cm).",
-                chefPairing = "Created via Single Photo-to-3D Pipeline ($savedGlbName + .usdz).",
-                allergens = listOf("Photo-to-3D Verified"),
-                cameraOrbit = "22deg 68deg 0.42m",
-                polyCount = "glTF 2.0 • 36 KB .glb",
-                layers3D = photoLayers,
-                customPosterPath = posterFile.absolutePath
-            )
-
-            _uiState.update { state ->
-                state.copy(
-                    dishes = listOf(newDish) + state.dishes,
-                    selectedDish = newDish,
-                    preloadedDishIds = state.preloadedDishIds + newDish.id,
-                    lastUploadReport = "Photo converted to 3D Dish '$cleanTitle' ($savedGlbName) and added to AR Menu!",
-                    isArModalOpen = true,
-                    currentDestination = AppDestination.BISTRO_MENU
-                )
-            }
-        } catch (e: Exception) {
-            _uiState.update {
-                it.copy(
-                    lastUploadReport = "Photo-to-3D error: ${e.localizedMessage ?: "Unable to process image"}"
-                )
-            }
-        }
-    }
-
-    /**
-     * Generates a new 3D dish directly inside the app from the 3D Dish Builder Studio.
-     */
     fun createCustomDishInStudio(
         title: String,
         price: Double,
@@ -347,13 +364,14 @@ class ArMenuViewModel : ViewModel() {
         heightCm: Float,
         plateColorHex: Long,
         baseLayerColorHex: Long,
-        topCrownColorHex: Long
+        topCrownColorHex: Long,
+        isVeg: Boolean = false
     ) {
-        val cleanTitle = title.trim().ifEmpty { "Chef's Spatial Special" }
+        val cleanTitle = title.trim().ifEmpty { "4D Special Dish" }
         val slug = cleanTitle.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
         val mappedGlb = when (category) {
-            DishCategory.RAMEN -> "models/ramen.glb"
             DishCategory.PIZZA -> "models/pizza.glb"
+            DishCategory.RAMEN, DishCategory.MAIN_COURSE, DishCategory.SALADS -> "models/ramen.glb"
             DishCategory.DESSERTS_DRINKS -> "models/matcha_cake.glb"
             else -> "models/burger.glb"
         }
@@ -368,8 +386,9 @@ class ArMenuViewModel : ViewModel() {
         val newDish = ArMenuDish(
             id = "studio-$slug-${System.currentTimeMillis() % 10000}",
             title = cleanTitle,
-            subtitle = "Created in Aura 3D Dish Builder • 1:1 Scale",
-            category = if (category == DishCategory.ALL) DishCategory.BURGERS else category,
+            subtitle = "4D Smart Menu Item • 1:1 True Scale",
+            category = if (category == DishCategory.ALL) DishCategory.MAIN_COURSE else category,
+            isVeg = isVeg,
             price = price,
             calories = 720,
             prepMinutes = 10,
@@ -378,16 +397,20 @@ class ArMenuViewModel : ViewModel() {
             glbAsset = mappedGlb,
             usdzAsset = "models/$slug.usdz",
             imageRes = when (category) {
-                DishCategory.RAMEN -> R.drawable.img_dish_ramen
                 DishCategory.PIZZA -> R.drawable.img_dish_pizza
+                DishCategory.RAMEN, DishCategory.MAIN_COURSE, DishCategory.SALADS -> R.drawable.img_dish_ramen
                 else -> R.drawable.img_dish_burger
             },
-            description = "Custom 3D spatial dish crafted in Aura 3D Builder with 1:1 true dimensions (Ø ${diameterCm.toInt()}cm × H ${heightCm}cm) and multi-layer PBR shading.",
-            chefPairing = "Custom 3D .GLB + .USDZ spatial dish ready for AR table projection.",
-            allergens = listOf("Custom Recipe"),
+            description = "Custom 4D spatial dish crafted in Aura 3D Builder with 1:1 true dimensions (Ø ${diameterCm.toInt()}cm × H ${heightCm}cm) and multi-layer PBR shading.",
+            chefPairing = "4D Smart Menu Item ready for AR table projection.",
+            allergens = listOf(if (isVeg) "Vegetarian" else "Non-Vegetarian"),
             cameraOrbit = "20deg 70deg 0.42m",
             polyCount = "3.6k tris • 32 KB .glb",
-            layers3D = customLayers
+            layers3D = customLayers,
+            nutritionHotspots = listOf(
+                ArNutritionHotspot(cleanTitle, "Chef Crafted", "Fresh Ingredients", "✨", -0.50f, -0.22f),
+                ArNutritionHotspot("Nutrition", "Balanced Nutrients", "High Protein", "🥗", 0.50f, 0.25f)
+            )
         )
 
         _uiState.update { state ->
@@ -395,7 +418,7 @@ class ArMenuViewModel : ViewModel() {
                 dishes = listOf(newDish) + state.dishes,
                 selectedDish = newDish,
                 preloadedDishIds = state.preloadedDishIds + newDish.id,
-                lastUploadReport = "Created '$cleanTitle' (${newDish.dimensionsLabel}) and added to AR Menu!",
+                lastUploadReport = "Created '$cleanTitle' (${newDish.dimensionsLabel}) and added to 4D AR Menu!",
                 isArModalOpen = true,
                 currentDestination = AppDestination.BISTRO_MENU
             )
@@ -404,10 +427,11 @@ class ArMenuViewModel : ViewModel() {
 
     private fun buildCustom3DLayers(category: DishCategory): List<IngredientLayer3D> {
         return when (category) {
-            DishCategory.RAMEN -> BistroMenuRepository.dishes[1].layers3D
-            DishCategory.PIZZA -> BistroMenuRepository.dishes[2].layers3D
-            DishCategory.DESSERTS_DRINKS -> BistroMenuRepository.dishes[3].layers3D
-            else -> BistroMenuRepository.dishes[0].layers3D
+            DishCategory.PIZZA -> BistroMenuRepository.dishes[0].layers3D
+            DishCategory.SALADS -> BistroMenuRepository.dishes[1].layers3D
+            DishCategory.RAMEN, DishCategory.MAIN_COURSE -> BistroMenuRepository.dishes[4].layers3D
+            DishCategory.DESSERTS_DRINKS -> BistroMenuRepository.dishes[5].layers3D
+            else -> BistroMenuRepository.dishes[2].layers3D
         }
     }
 
@@ -461,59 +485,50 @@ class ArMenuViewModel : ViewModel() {
         val jsCode = readAssetText("webar/app.js")
 
         val workflowGuide = """
-            # 3D Models Kaise Banaye & Kaise Upload Kare (Complete Guide)
+            # 4D Smart Menu — The Complete Business Blueprint & AR Setup
+            
+            ## 1. What is a 4D Smart Menu?
+            As seen in the videos:
+            - Customers sit at the restaurant table and scan a physical QR standee with their phone camera.
+            - Without downloading any app, a luxury WebAR menu opens in Safari / Chrome.
+            - Customers tap 'VIEW ON YOUR TABLE' (or 3D view).
+            - The dish appears directly on their physical dining table in 1:1 true life-size!
+            - Floating AR Holographic Cards show ingredient benefits (e.g. Avocado: Omega 9, Chicken: High Protein, Tomato: Vitamin C).
+            - Optional Animated 3D Chef Mascot welcomes the customer right on top of the plate!
 
-            ## STEP 1: 3D Food Models Kaise Banaye? (3 Easy Methods)
-            1. Smartphone Photogrammetry (Sabse Easy & Real):
-               - App: Polycam, KIRI Engine, ya Luma AI apne phone me install karein.
-               - Dish ko well-lit table par rakhein (matte plate use karein, shiny glass avoid karein).
-               - Dish ke charo taraf ghoom kar 35-50 overlapping photos (top, 45° angle, aur side angle se) click karein.
-               - App automatically 3D mesh + texture generate kar dega.
-               - Export format: Android ke liye `.glb` (glTF 2.0 binary) aur iPhone ke liye `.usdz` export karein.
-
-            2. Blender 3D / Optimization (1:1 Real Scale):
-               - Blender me `.glb` import karein aur Dimensions check karein:
-                 1 Blender Unit = 1 Meter (e.g., 18cm burger plate = 0.18m).
-               - Origin Point (`0,0,0`) ko plate ke bilkul bottom-center par set karein taaki AR me dish table ke upar baithe, hawa me na ude.
-               - File size `< 3 MB` rakhne ke liye textures ko `1024x1024` JPG/WebP aur Draco compression use karein.
-
-            ## STEP 2: 3D Models Kaise Upload Kare?
-            1. App ke andar (Instant Upload):
-               - Niche "3D Upload" tab par tap karein -> "Select .GLB / .USDZ File from Device" dabayein.
-               - Apne phone/PC se `.glb` file choose karein -> App turant usko validate karke AR Menu me add kar dega!
-            2. Live WebAR HTML/JS me (`<input type="file">`):
-               - `URL.createObjectURL(file)` ka use karke `<model-viewer src="blob:...">` me bina server upload ke bhi instant test kar sakte hain.
-            3. Self-Hosted Server Folder me:
-               - `webar/models/dish_name.glb` aur `webar/models/dish_name.usdz` folder me upload karein aur `app.js` ke `MENU_ITEMS` array me path add kar dein.
+            ## 2. Business Model for Cafes & Restaurants
+            - Initial 4D Menu Setup: ₹30,000 – ₹50,000 per restaurant / cafe
+            - Monthly Updates & Maintenance: ₹10,000 / month per client
+            - 10 Restaurant Clients = ₹4,00,000 – ₹5,00,000 revenue with near zero software cost!
         """.trimIndent()
 
         return listOf(
             WebArCodeArtifact(
-                id = "ARCHITECTURE.md",
-                fileName = "3D-GUIDE.md",
-                badge = "How to Create & Upload",
-                description = "Step-by-step guide on creating 3D food models (Polycam/Luma/Blender) and uploading .glb/.usdz files.",
+                id = "4D-BLUEPRINT.md",
+                fileName = "4D-BLUEPRINT.md",
+                badge = "4D Smart Menu Blueprint",
+                description = "Complete business model, pricing structure, and 4D AR Table technology setup.",
                 codeContent = workflowGuide
             ),
             WebArCodeArtifact(
                 id = "index.html",
                 fileName = "index.html",
                 badge = "HTML5 + <model-viewer>",
-                description = "Semantic HTML5 menu structure, resource preloading hints, and configured <model-viewer> dialog with custom AR slots.",
+                description = "Semantic HTML5 4D menu structure, AR hotspots, and QR standee integration.",
                 codeContent = htmlCode
             ),
             WebArCodeArtifact(
                 id = "styles.css",
                 fileName = "styles.css",
                 badge = "Responsive Mobile CSS",
-                description = "Mobile-first dark culinary UI system, sticky category bar, responsive dish grid, and bottom-sheet 3D/AR viewport styling.",
+                description = "Golden Oak luxury dark styling, floating AR callouts, and category icon strip.",
                 codeContent = cssCode
             ),
             WebArCodeArtifact(
                 id = "app.js",
                 fileName = "app.js",
-                badge = "Vanilla JS + Fallback Engine",
-                description = "Menu catalog mapping (.glb/.usdz pairs), pointerenter asset preloader, WebAR capability detector, and defensive 3D .glb orbital fallback renderer.",
+                badge = "Vanilla JS + 4D Engine",
+                description = "WebAR menu controller, hotspot coordinate annotations, and 3D food renderer.",
                 codeContent = jsCode
             )
         )

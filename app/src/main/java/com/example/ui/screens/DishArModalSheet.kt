@@ -29,8 +29,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material3.Button
@@ -52,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.model.ArMenuDish
 import com.example.model.LightingPreset
 import com.example.model.ViewerMode
@@ -70,6 +73,8 @@ fun DishArDetailPanel(
     viewerMode: ViewerMode,
     autoRotate: Boolean,
     explodeLayers: Boolean,
+    showChefMascot: Boolean,
+    showNutritionHotspots: Boolean,
     trueScale1To1: Boolean,
     lightingPreset: LightingPreset,
     statusBanner: String?,
@@ -78,6 +83,8 @@ fun DishArDetailPanel(
     onSelectViewerMode: (ViewerMode) -> Unit,
     onToggleAutoRotate: () -> Unit,
     onToggleExplodeLayers: () -> Unit,
+    onToggleChefMascot: () -> Unit,
+    onToggleNutritionHotspots: () -> Unit,
     onToggleTrueScale: () -> Unit,
     onCycleLighting: () -> Unit,
     onLaunchNativeSceneViewer: () -> Unit,
@@ -110,11 +117,19 @@ fun DishArDetailPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${dish.category.displayName.uppercase()} • SPATIAL ASSET PAIR",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = SaffronGold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = if (dish.isVeg) "🟢 VEG" else "🔴 NON-VEG",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (dish.isVeg) SpatialEmerald else Color(0xFFEF5350)
+                        )
+                        Text(text = "•", style = MaterialTheme.typography.labelSmall, color = SaffronGold)
+                        Text(
+                            text = "${dish.category.displayName.uppercase()} • 4D SMART AR",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = SaffronGold
+                        )
+                    }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = dish.title,
@@ -134,14 +149,14 @@ fun DishArDetailPanel(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close 3D AR Viewer",
+                            contentDescription = "Close 3D Viewer",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
             }
 
-            // Mode Switcher Bar (3D Orbital | View in Room | <model-viewer> Web)
+            // Mode Switcher Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -177,21 +192,23 @@ fun DishArDetailPanel(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 3D / AR Interactive Stage
+            // 3D / AR Interactive Stage with 4D Features
             Interactive3DOrbitalCanvas(
                 dish = dish,
                 viewerMode = viewerMode,
                 autoRotate = autoRotate,
                 explodeLayers = explodeLayers,
+                showChefMascot = showChefMascot,
+                showNutritionHotspots = showNutritionHotspots,
                 trueScale1To1 = trueScale1To1,
                 lightingPreset = lightingPreset,
                 onLaunchNativeSceneViewer = onLaunchNativeSceneViewer,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(310.dp)
+                    .height(320.dp)
             )
 
-            // Interactive 3D Controls Strip
+            // 4D Interactive Controls Strip
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -199,6 +216,60 @@ fun DishArDetailPanel(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                FilterChip(
+                    selected = showNutritionHotspots,
+                    onClick = onToggleNutritionHotspots,
+                    label = { Text("AR Nutrition Tags") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.LocalOffer,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = SpatialEmerald.copy(alpha = 0.22f),
+                        selectedLabelColor = SpatialEmerald,
+                        selectedLeadingIconColor = SpatialEmerald
+                    )
+                )
+
+                FilterChip(
+                    selected = showChefMascot,
+                    onClick = onToggleChefMascot,
+                    label = { Text("👨‍🍳 3D Chef Mascot") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Face,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = SaffronGold.copy(alpha = 0.22f),
+                        selectedLabelColor = SaffronGold,
+                        selectedLeadingIconColor = SaffronGold
+                    )
+                )
+
+                FilterChip(
+                    selected = trueScale1To1,
+                    onClick = onToggleTrueScale,
+                    label = { Text(if (trueScale1To1) "1:1 Real Scale" else "Auto Fit") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Straighten,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = SaffronGold.copy(alpha = 0.22f),
+                        selectedLabelColor = SaffronGold,
+                        selectedLeadingIconColor = SaffronGold
+                    )
+                )
+
                 FilterChip(
                     selected = autoRotate,
                     onClick = onToggleAutoRotate,
@@ -214,14 +285,13 @@ fun DishArDetailPanel(
                         selectedContainerColor = SaffronGold.copy(alpha = 0.22f),
                         selectedLabelColor = SaffronGold,
                         selectedLeadingIconColor = SaffronGold
-                    ),
-                    modifier = Modifier.testTag("toggle_auto_orbit")
+                    )
                 )
 
                 FilterChip(
                     selected = explodeLayers,
                     onClick = onToggleExplodeLayers,
-                    label = { Text("Ingredient X-Ray") },
+                    label = { Text("Layer X-Ray") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Layers,
@@ -233,27 +303,7 @@ fun DishArDetailPanel(
                         selectedContainerColor = SaffronGold.copy(alpha = 0.22f),
                         selectedLabelColor = SaffronGold,
                         selectedLeadingIconColor = SaffronGold
-                    ),
-                    modifier = Modifier.testTag("toggle_explode_layers")
-                )
-
-                FilterChip(
-                    selected = trueScale1To1,
-                    onClick = onToggleTrueScale,
-                    label = { Text(if (trueScale1To1) "1:1 True Scale" else "Table Fit Scale") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Straighten,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = SpatialEmerald.copy(alpha = 0.22f),
-                        selectedLabelColor = SpatialEmerald,
-                        selectedLeadingIconColor = SpatialEmerald
-                    ),
-                    modifier = Modifier.testTag("toggle_true_scale")
+                    )
                 )
 
                 FilterChip(
@@ -271,12 +321,10 @@ fun DishArDetailPanel(
                         selectedContainerColor = BistroElevated,
                         selectedLabelColor = MaterialTheme.colorScheme.onSurface,
                         selectedLeadingIconColor = SaffronGold
-                    ),
-                    modifier = Modifier.testTag("cycle_lighting_button")
+                    )
                 )
             }
 
-            // Defensive Fallback / Status Notice
             AnimatedVisibility(visible = statusBanner != null) {
                 if (statusBanner != null) {
                     Surface(
@@ -297,7 +345,7 @@ fun DishArDetailPanel(
                 }
             }
 
-            // Dish Metadata, Asset Pair Telemetry & Actions
+            // Dish Details & Action Buttons (Golden Oak Style)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -314,7 +362,7 @@ fun DishArDetailPanel(
                         color = SaffronGold
                     )
                     Text(
-                        text = "${dish.calories} kcal • Prep ${dish.prepMinutes}m • ${dish.dimensionsLabel}",
+                        text = "${dish.calories} Calories • Prep ${dish.prepMinutes}m • ${dish.dimensionsLabel}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -328,41 +376,55 @@ fun DishArDetailPanel(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = "Sommelier & Chef Note: ${dish.chefPairing}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SaffronGold.copy(alpha = 0.9f)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Asset Pair & Allergen Tags
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AssetBadgePill("Android: ${dish.glbAsset}", SpatialEmerald)
-                    AssetBadgePill("iOS: ${dish.usdzAsset}", SaffronGold)
-                    dish.allergens.forEach { allergen ->
-                        AssetBadgePill("Allergen: $allergen", MaterialTheme.colorScheme.onSurfaceVariant)
+                // Nutrition Hotspots Summary Badges (from Video 4)
+                if (dish.nutritionHotspots.isNotEmpty()) {
+                    Text(
+                        text = "FLOATING AR NUTRITION HIGHLIGHTS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SpatialEmerald
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        dish.nutritionHotspots.forEach { spot ->
+                            Surface(
+                                color = BistroElevated,
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, SpatialEmerald.copy(alpha = 0.45f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Text(text = spot.iconEmoji, fontSize = 12.sp)
+                                    Text(
+                                        text = "${spot.name}: ${spot.benefit1}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
                     }
+                    Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Primary Action Buttons
-                Row(
+                // Action Buttons (Matching Video 4)
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = onLaunchNativeSceneViewer,
+                        onClick = onAddToOrder,
                         modifier = Modifier
-                            .weight(1.15f)
+                            .fillMaxWidth()
                             .height(52.dp)
-                            .testTag("launch_scene_viewer_button"),
+                            .testTag("add_to_order_button"),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SaffronGold,
@@ -370,38 +432,39 @@ fun DishArDetailPanel(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ViewInAr,
+                            imageVector = Icons.Default.AddShoppingCart,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "View in Room (AR)",
+                            text = "ADD TO ORDER",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
                     OutlinedButton(
-                        onClick = onAddToOrder,
+                        onClick = onLaunchNativeSceneViewer,
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .height(52.dp)
-                            .testTag("add_to_order_button"),
+                            .testTag("launch_scene_viewer_button"),
                         shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, SaffronGold.copy(alpha = 0.6f))
+                        border = BorderStroke(1.5.dp, SaffronGold)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.AddShoppingCart,
+                            imageVector = Icons.Default.ViewInAr,
                             contentDescription = null,
                             tint = SaffronGold,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Add to Table",
+                            text = "VIEW ON YOUR TABLE (4D AR)",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontWeight = FontWeight.Bold,
+                            color = SaffronGold
                         )
                     }
                 }
@@ -413,27 +476,13 @@ fun DishArDetailPanel(
 }
 
 @Composable
-private fun AssetBadgePill(text: String, tint: Color) {
-    Surface(
-        color = BistroElevated,
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, tint.copy(alpha = 0.35f))
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = tint,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-        )
-    }
-}
-
-@Composable
 fun DishArModalDialog(
     dish: ArMenuDish,
     viewerMode: ViewerMode,
     autoRotate: Boolean,
     explodeLayers: Boolean,
+    showChefMascot: Boolean,
+    showNutritionHotspots: Boolean,
     trueScale1To1: Boolean,
     lightingPreset: LightingPreset,
     statusBanner: String?,
@@ -441,6 +490,8 @@ fun DishArModalDialog(
     onSelectViewerMode: (ViewerMode) -> Unit,
     onToggleAutoRotate: () -> Unit,
     onToggleExplodeLayers: () -> Unit,
+    onToggleChefMascot: () -> Unit,
+    onToggleNutritionHotspots: () -> Unit,
     onToggleTrueScale: () -> Unit,
     onCycleLighting: () -> Unit,
     onLaunchNativeSceneViewer: () -> Unit,
@@ -458,6 +509,8 @@ fun DishArModalDialog(
             viewerMode = viewerMode,
             autoRotate = autoRotate,
             explodeLayers = explodeLayers,
+            showChefMascot = showChefMascot,
+            showNutritionHotspots = showNutritionHotspots,
             trueScale1To1 = trueScale1To1,
             lightingPreset = lightingPreset,
             statusBanner = statusBanner,
@@ -466,6 +519,8 @@ fun DishArModalDialog(
             onSelectViewerMode = onSelectViewerMode,
             onToggleAutoRotate = onToggleAutoRotate,
             onToggleExplodeLayers = onToggleExplodeLayers,
+            onToggleChefMascot = onToggleChefMascot,
+            onToggleNutritionHotspots = onToggleNutritionHotspots,
             onToggleTrueScale = onToggleTrueScale,
             onCycleLighting = onCycleLighting,
             onLaunchNativeSceneViewer = onLaunchNativeSceneViewer,

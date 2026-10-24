@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ViewInAr
@@ -45,9 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.model.AppDestination
+import com.example.model.ViewerMode
 import com.example.ui.screens.BistroMenuScreen
 import com.example.ui.screens.LiveWebArSandboxScreen
 import com.example.ui.screens.ModelCreatorScreen
+import com.example.ui.screens.TableQrStandeeScreen
 import com.example.ui.screens.WebArCodeStudioScreen
 import com.example.ui.theme.BistroCardBorder
 import com.example.ui.theme.BistroElevated
@@ -106,6 +109,7 @@ fun AuraArBistroApp(
                     val selected = uiState.currentDestination == destination
                     val icon = when (destination) {
                         AppDestination.BISTRO_MENU -> Icons.Default.RestaurantMenu
+                        AppDestination.TABLE_QR -> Icons.Default.QrCode2
                         AppDestination.MODEL_CREATOR -> Icons.Default.CloudUpload
                         AppDestination.LIVE_WEBAR -> Icons.Default.ViewInAr
                         AppDestination.CODE_STUDIO -> Icons.Default.Code
@@ -148,12 +152,15 @@ fun AuraArBistroApp(
                     BistroMenuScreen(
                         uiState = uiState,
                         onSelectCategory = viewModel::selectCategory,
+                        onSelectDietaryFilter = viewModel::selectDietaryFilter,
                         onSearchQueryChange = viewModel::updateSearchQuery,
                         onOpenDishAr = viewModel::openDishArViewer,
                         onCloseDishAr = viewModel::closeDishArViewer,
                         onSelectViewerMode = viewModel::setViewerMode,
                         onToggleAutoRotate = viewModel::toggleAutoRotate,
                         onToggleExplodeLayers = viewModel::toggleExplodeLayers,
+                        onToggleChefMascot = viewModel::toggleChefMascot,
+                        onToggleNutritionHotspots = viewModel::toggleNutritionHotspots,
                         onToggleTrueScale = viewModel::toggleTrueScale,
                         onCycleLighting = viewModel::cycleLightingPreset,
                         onLaunchNativeSceneViewer = { dish ->
@@ -163,8 +170,24 @@ fun AuraArBistroApp(
                         onOpenWebArSandbox = {
                             viewModel.selectDestination(AppDestination.LIVE_WEBAR)
                         },
+                        onOpenTableQrStandee = {
+                            viewModel.selectDestination(AppDestination.TABLE_QR)
+                        },
                         onOpenCodeStudio = {
                             viewModel.selectDestination(AppDestination.CODE_STUDIO)
+                        }
+                    )
+                }
+
+                AppDestination.TABLE_QR -> {
+                    TableQrStandeeScreen(
+                        selectedDish = uiState.selectedDish,
+                        onLaunchDishAr = { dish ->
+                            viewModel.openDishArViewer(dish, ViewerMode.ROOM_AR_TABLE)
+                            viewModel.selectDestination(AppDestination.BISTRO_MENU)
+                        },
+                        onOpenLiveWebAr = {
+                            viewModel.selectDestination(AppDestination.LIVE_WEBAR)
                         }
                     )
                 }
@@ -242,12 +265,12 @@ private fun AuraTopBar(
         ) {
             Column {
                 Text(
-                    text = "SPATIAL GASTRONOMY • WEBAR MENU",
+                    text = "THE GOLDEN OAK • 4D SMART MENU",
                     style = MaterialTheme.typography.labelSmall,
                     color = SaffronGold
                 )
                 Text(
-                    text = "Aura AR Bistro",
+                    text = "Aura 4D Bistro",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -298,7 +321,7 @@ private fun AuraTopBar(
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = ".GLB + .USDZ",
+                            text = "4D AR READY",
                             style = MaterialTheme.typography.labelSmall,
                             color = SpatialEmerald
                         )

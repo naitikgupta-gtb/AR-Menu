@@ -1,98 +1,151 @@
 /**
- * Aura AR Bistro — Self-Hosted WebAR Menu Controller & Binary .GLB 3D Engine
+ * The Golden Oak — 4D Smart Menu WebAR Controller & 3D Orbital Canvas
  * Supports Google <model-viewer> (Android Scene Viewer .glb + iOS Quick Look .usdz)
- * with automatic binary glTF 2.0 (.glb) 3D orbital fallback for universal compatibility.
+ * with floating holographic AR nutrition tags, 3D chef mascot, and binary .glb turntable fallback.
  */
 (function () {
   'use strict';
 
-  // 1. Restaurant AR Menu Catalog (Matching .glb & .usdz asset pairs)
+  // 1. Restaurant 4D Menu Catalog (Matching Reference Videos 1, 2, 3 & 4)
   const MENU_ITEMS = [
     {
-      id: 'wagyu-truffle-burger',
-      title: 'Double Wagyu Truffle Smash',
-      category: 'Burgers & Mains',
-      price: '$26.00',
-      calories: '840 kcal • Prep 11m',
-      dimensions: 'Ø 14cm × H 12cm',
-      description: 'Two seared A5 Wagyu smash patties, aged cave-ripened Gruyère, black truffle aioli, crispy shallots, and toasted Hokkaido milk brioche.',
+      id: 'grilled-chicken-salad',
+      title: 'Grilled Chicken & Avocado Salad',
+      category: 'Salads & Bowls',
+      dietary: 'NON_VEG',
+      price: '$18.50',
+      calories: '🔥 340 kcal • Prep 8m',
+      dimensions: 'Ø 24cm × H 8cm',
+      description: 'Char-grilled rosemary chicken breast over crisp mixed greens, Haas avocado chunks, San Marzano cherry tomatoes, Persian cucumbers, and cold-pressed extra virgin olive oil.',
       glbSrc: 'models/burger.glb',
       usdzSrc: 'models/burger.usdz',
       posterSrc: 'images/burger.jpg',
-      allergens: ['Gluten', 'Dairy', 'Sesame', 'Egg'],
-      cameraOrbit: '25deg 72deg 0.42m'
-    },
-    {
-      id: 'black-garlic-ramen',
-      title: 'Kurobuta Black Garlic Tonkotsu',
-      category: 'Artisanal Ramen',
-      price: '$23.50',
-      calories: '790 kcal • Prep 9m',
-      dimensions: 'Ø 22cm × H 9.5cm',
-      description: '18-hour simmered pork bone broth infused with roasted black garlic mayu, torch-seared chashu pork belly, 6-minute ajitsuke egg, and housealkaline noodles.',
-      glbSrc: 'models/ramen.glb',
-      usdzSrc: 'models/ramen.usdz',
-      posterSrc: 'images/ramen.jpg',
-      allergens: ['Soy', 'Egg', 'Wheat', 'Sesame'],
-      cameraOrbit: '0deg 65deg 0.45m'
+      allergens: ['Zero Dairy', 'Gluten-Free', 'Keto-Friendly'],
+      cameraOrbit: '15deg 62deg 0.50m',
+      hotspots: [
+        { name: 'Avocado', benefit1: 'Omega 9 • Good for Heart', emoji: '🥑', pos: '0.08 0.05 0.04' },
+        { name: 'Grilled Chicken', benefit1: 'High Protein • Low Carbs', emoji: '🍗', pos: '-0.07 0.07 -0.02' },
+        { name: 'Cherry Tomatoes', benefit1: 'Vitamin C • Antioxidants', emoji: '🍅', pos: '0.02 0.04 -0.08' },
+        { name: 'Persian Cucumber', benefit1: 'Hydration • Low Calorie', emoji: '🥒', pos: '-0.06 0.03 0.07' },
+        { name: 'Kalamata Olives', benefit1: 'Good Fats • Anti-inflammatory', emoji: '🫒', pos: '0.05 0.03 -0.04' }
+      ]
     },
     {
       id: 'burrata-truffle-pizza',
-      title: 'Wood-Fired Burrata & Tartufo',
-      category: 'Wood-Fired Pizza',
+      title: 'Italian Supreme Wood-Fired Pizza',
+      category: 'Pizza & Italian',
+      dietary: 'VEG',
       price: '$28.00',
-      calories: '910 kcal • Prep 8m',
-      dimensions: 'Ø 32cm × H 4.5cm',
-      description: '72-hour cold-fermented sourdough crust, crushed San Marzano DOP tomatoes, whole creamy Pugliese burrata, shaved Umbrian black truffle, and sweet basil.',
+      calories: '🔥 890 kcal • Prep 7m',
+      dimensions: 'Ø 32cm × H 4cm',
+      description: '72-hour sourdough crust, San Marzano DOP tomatoes, whole creamy Pugliese burrata cheese, shaved Umbrian black truffle, and sweet basil leaves.',
       glbSrc: 'models/pizza.glb',
       usdzSrc: 'models/pizza.usdz',
       posterSrc: 'images/pizza.jpg',
-      allergens: ['Gluten', 'Milk'],
-      cameraOrbit: '15deg 58deg 0.55m'
+      allergens: ['Gluten', 'Pugliese Dairy'],
+      cameraOrbit: '15deg 55deg 0.55m',
+      hotspots: [
+        { name: 'Pugliese Burrata', benefit1: 'Rich Calcium & Protein', emoji: '🧀', pos: '0.0 0.06 0.0' },
+        { name: 'San Marzano Tomato', benefit1: 'Lycopene & Minerals', emoji: '🍅', pos: '0.10 0.03 0.05' },
+        { name: 'Umbrian Truffle', benefit1: 'Earthy Antioxidants', emoji: '🍄', pos: '-0.08 0.04 -0.06' },
+        { name: 'Fresh Basil', benefit1: 'Polyphenols & Aroma', emoji: '🌿', pos: '0.04 0.04 -0.09' }
+      ]
+    },
+    {
+      id: 'wagyu-truffle-burger',
+      title: 'Classic Oak Truffle Burger',
+      category: 'Burgers',
+      dietary: 'NON_VEG',
+      price: '$24.50',
+      calories: '🔥 820 kcal • Prep 10m',
+      dimensions: 'Ø 14cm × H 12cm',
+      description: 'Two seared Wagyu patties, aged Gruyère cheese, black truffle emulsion, caramelized shallots, and toasted Hokkaido milk brioche bun.',
+      glbSrc: 'models/burger.glb',
+      usdzSrc: 'models/burger.usdz',
+      posterSrc: 'images/burger.jpg',
+      allergens: ['Gluten', 'Dairy', 'Sesame'],
+      cameraOrbit: '25deg 72deg 0.42m',
+      hotspots: [
+        { name: 'Wagyu Patty', benefit1: 'High B12 & Zinc', emoji: '🥩', pos: '0.0 0.04 0.0' },
+        { name: 'Aged Gruyère', benefit1: 'Rich Dairy Calcium', emoji: '🧀', pos: '0.05 0.06 0.02' },
+        { name: 'Brioche Bun', benefit1: 'Hand-crafted Daily', emoji: '🍞', pos: '0.0 0.11 0.0' }
+      ]
+    },
+    {
+      id: 'burrata-prosciutto',
+      title: 'Burrata with Prosciutto di Parma',
+      category: 'Starters',
+      dietary: 'NON_VEG',
+      price: '$21.00',
+      calories: '🔥 520 kcal • Prep 6m',
+      dimensions: 'Ø 22cm × H 6cm',
+      description: 'Imported 24-month aged Prosciutto di Parma draped over fresh whole Italian burrata, heirloom baby tomatoes, aged balsamic reduction, and grilled ciabatta.',
+      glbSrc: 'models/pizza.glb',
+      usdzSrc: 'models/pizza.usdz',
+      posterSrc: 'images/pizza.jpg',
+      allergens: ['Dairy', 'Gluten-Optional'],
+      cameraOrbit: '10deg 60deg 0.48m',
+      hotspots: [
+        { name: 'Prosciutto 24m', benefit1: 'Artisanal Cured Protein', emoji: '🥓', pos: '-0.07 0.04 0.04' },
+        { name: 'Whole Burrata', benefit1: 'Creamy Stracciatella Center', emoji: '🧀', pos: '0.0 0.05 0.0' }
+      ]
+    },
+    {
+      id: 'black-garlic-ramen',
+      title: 'Kurobuta Tonkotsu Ramen',
+      category: 'Main Course',
+      dietary: 'NON_VEG',
+      price: '$22.50',
+      calories: '🔥 780 kcal • Prep 11m',
+      dimensions: 'Ø 22cm × H 10cm',
+      description: '18-hour simmered pork bone broth infused with roasted black garlic mayu, torch-seared chashu pork belly, 6-minute ajitsuke egg, and house alkaline noodles.',
+      glbSrc: 'models/ramen.glb',
+      usdzSrc: 'models/ramen.usdz',
+      posterSrc: 'images/ramen.jpg',
+      allergens: ['Soy', 'Egg', 'Wheat'],
+      cameraOrbit: '0deg 65deg 0.45m',
+      hotspots: [
+        { name: 'Tonkotsu Collagen', benefit1: 'Rich Bone Marrow Nutrients', emoji: '🍲', pos: '0.0 0.02 0.0' },
+        { name: 'Chashu Belly', benefit1: 'Seared Melty Protein', emoji: '🥩', pos: '-0.05 0.05 0.03' },
+        { name: 'Ajitsuke Egg', benefit1: 'Jammy 6-min Yolk', emoji: '🥚', pos: '0.05 0.04 -0.04' }
+      ]
     },
     {
       id: 'uji-matcha-mille-crepe',
-      title: 'Uji Ceremonial Matcha Mille Crêpe',
-      category: 'Desserts & Drinks',
+      title: 'Ceremonial Matcha Mille Crêpe',
+      category: 'Desserts',
+      dietary: 'VEG',
       price: '$16.50',
-      calories: '460 kcal • Chilled',
+      calories: '🔥 460 kcal • Chilled',
       dimensions: 'Ø 16cm × H 7.5cm',
-      description: 'Twenty paper-thin French crêpe layers brushed with ceremonial-grade Uji matcha diplomate cream, topped with Hokkaido chantilly and gold leaf.',
+      description: 'Twenty paper-thin French crêpe layers brushed with ceremonial-grade Uji matcha diplomate cream, topped with Hokkaido chantilly and edible 24K gold flakes.',
       glbSrc: 'models/matcha_cake.glb',
       usdzSrc: 'models/matcha_cake.usdz',
       posterSrc: 'images/hero_bistro.jpg',
       allergens: ['Dairy', 'Egg', 'Gluten'],
-      cameraOrbit: '-20deg 70deg 0.38m'
-    },
-    {
-      id: 'smoked-hinoki-old-fashioned',
-      title: 'Smoked Hinoki & Yuzu Old Fashioned',
-      category: 'Desserts & Drinks',
-      price: '$19.00',
-      calories: '165 kcal • Tableside Smoke',
-      dimensions: 'Ø 9.5cm × H 10cm',
-      description: 'Japanese single malt whisky, toasted Okinawa black sugar, aromatic yuzu bitters, and a hand-carved crystal ice sphere smoked over Hinoki cypress.',
-      glbSrc: 'models/old_fashioned.glb',
-      usdzSrc: 'models/old_fashioned.usdz',
-      posterSrc: 'images/hero_bistro.jpg',
-      allergens: ['Zero Gluten', 'Sulfite-Free'],
-      cameraOrbit: '10deg 74deg 0.32m'
+      cameraOrbit: '-20deg 70deg 0.38m',
+      hotspots: [
+        { name: 'Uji Matcha', benefit1: 'EGCG Antioxidant Boost', emoji: '🍵', pos: '0.0 0.08 0.0' },
+        { name: '20 Mille Layers', benefit1: 'Silky Diplomate Cream', emoji: '🍰', pos: '0.04 0.04 0.04' }
+      ]
     }
   ];
 
-  const CATEGORIES = ['All Dishes', 'Burgers & Mains', 'Artisanal Ramen', 'Wood-Fired Pizza', 'Desserts & Drinks'];
+  const CATEGORIES = ['All Dishes', 'Starters', 'Main Course', 'Burgers', 'Pizza & Italian', 'Salads & Bowls', 'Desserts'];
 
   // State
   let activeCategory = 'All Dishes';
+  let activeDietary = 'ALL';
   let activeDish = MENU_ITEMS[0];
   let autoRotate = true;
-  let explodeLayers = false;
-  let fixedScale = true;
+  let showHotspots = true;
+  let showChefMascot = true;
   let lightingPresetIndex = 0;
+
   const LIGHTING_PRESETS = [
-    { name: 'Warm Bistro', exposure: 1.05, bgTop: '#2D231B', bgBot: '#120E0C', tint: [1.0, 0.92, 0.80] },
-    { name: 'Studio Daylight', exposure: 1.25, bgTop: '#2B3038', bgBot: '#121518', tint: [1.0, 1.0, 1.0] },
-    { name: 'Candlelight', exposure: 0.88, bgTop: '#331E12', bgBot: '#0E0907', tint: [1.05, 0.80, 0.62] }
+    { name: 'Warm Bistro', exposure: 1.05 },
+    { name: 'Studio Daylight', exposure: 1.25 },
+    { name: 'Candlelight', exposure: 0.88 }
   ];
 
   // DOM References
@@ -102,6 +155,7 @@
   const modalBackdrop = document.getElementById('modal-backdrop');
   const modalCloseBtn = document.getElementById('modal-close-btn');
   const modelViewer = document.getElementById('dish-model-viewer');
+  const modelHotspotsContainer = document.getElementById('model-hotspots-container');
   const fallbackCanvas = document.getElementById('fallback-3d-canvas');
   const fallbackBanner = document.getElementById('fallback-banner');
   const arCapabilityText = document.getElementById('ar-capability-text');
@@ -109,7 +163,7 @@
   // Preload cache for parsed .glb meshes
   const glbMeshCache = new Map();
 
-  // 2. Detect WebAR / Scene Viewer / Quick Look Support Defensively
+  // 2. Detect WebAR Capabilities
   async function detectARCapabilities() {
     const ua = navigator.userAgent || '';
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -125,17 +179,30 @@
     }
 
     if (webxrSupported) {
-      arCapabilityText.textContent = 'WebXR + Scene Viewer Ready';
+      arCapabilityText.textContent = '4D WebXR & Scene Viewer';
     } else if (isIOS) {
       arCapabilityText.textContent = 'iOS AR Quick Look (.usdz)';
     } else if (isAndroid) {
       arCapabilityText.textContent = 'Android Scene Viewer (.glb)';
     } else {
-      arCapabilityText.textContent = '3D Orbital Turntable Ready';
+      arCapabilityText.textContent = '4D Orbital 3D Turntable';
     }
   }
 
-  // 3. Render Category Tabs
+  // 3. Dietary Filter Buttons
+  function setupDietaryFilters() {
+    const btns = document.querySelectorAll('.dietary-btn');
+    btns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        btns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeDietary = btn.getAttribute('data-diet') || 'ALL';
+        renderMenuGrid();
+      });
+    });
+  }
+
+  // 4. Render Category Tabs
   function renderCategories() {
     const frag = document.createDocumentFragment();
     CATEGORIES.forEach((cat) => {
@@ -156,20 +223,28 @@
     categoryBar.appendChild(frag);
   }
 
-  // 4. Render Menu Cards with Minimized DOM Overhead
+  // 5. Render Menu Cards (Matching Golden Oak UI from Video 4)
   function renderMenuGrid() {
-    const filtered = activeCategory === 'All Dishes'
-      ? MENU_ITEMS
-      : MENU_ITEMS.filter((item) => item.category === activeCategory);
+    let filtered = MENU_ITEMS;
+    if (activeCategory !== 'All Dishes') {
+      filtered = filtered.filter((item) => item.category === activeCategory);
+    }
+    if (activeDietary !== 'ALL') {
+      filtered = filtered.filter((item) => item.dietary === activeDietary);
+    }
 
     const frag = document.createDocumentFragment();
     filtered.forEach((item) => {
+      const isVeg = item.dietary === 'VEG';
       const card = document.createElement('article');
       card.className = 'dish-card';
       card.innerHTML = `
         <div class="dish-thumb-wrap">
           <img src="${item.posterSrc}" alt="${item.title}" class="dish-thumb" loading="lazy" />
-          <span class="dish-3d-badge">⬡ 3D • .GLB / .USDZ</span>
+          <span class="dietary-tag ${isVeg ? 'veg' : 'nonveg'}" style="position:absolute; top:12px; left:12px; z-index:4;">
+            ${isVeg ? '🟢 VEG' : '🔴 NON-VEG'}
+          </span>
+          <span class="dish-3d-badge">${item.calories.split('•')[0]}</span>
         </div>
         <div class="dish-body">
           <div class="dish-header-row">
@@ -178,11 +253,11 @@
           </div>
           <p class="dish-desc">${item.description}</p>
           <div class="dish-meta-tags">
+            <span class="meta-tag">🥑 ${item.hotspots ? item.hotspots.length : 3} Holograms</span>
             <span class="meta-tag">${item.dimensions}</span>
-            <span class="meta-tag">${item.calories}</span>
           </div>
           <button type="button" class="btn-card-ar" data-dish-id="${item.id}">
-            <span>⬡</span> Interactive 3D / View in Room
+            <span>⬡</span> VIEW ON YOUR TABLE (4D AR)
           </button>
         </div>
       `;
@@ -196,88 +271,139 @@
     menuGrid.appendChild(frag);
   }
 
-  // 5. Binary glTF 2.0 (.glb) Parser & Preloader
+  // 6. Binary glTF 2.0 (.glb) Parser & Preloader
   async function preloadGlbAsset(glbUrl) {
     if (glbMeshCache.has(glbUrl)) {
       return glbMeshCache.get(glbUrl);
     }
     try {
       const response = await fetch(glbUrl);
-      if (!response.ok) throw new Error('HTTP ' + response.status);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const buffer = await response.arrayBuffer();
       const parsed = parseGlbBinary(buffer);
       glbMeshCache.set(glbUrl, parsed);
       return parsed;
     } catch (err) {
-      console.warn('Preload warning for', glbUrl, err);
-      return null;
+      console.warn('Failed to parse .glb binary, using procedural geometry:', err);
+      const fallback = generateProceduralDish(glbUrl);
+      glbMeshCache.set(glbUrl, fallback);
+      return fallback;
     }
   }
 
   function parseGlbBinary(arrayBuffer) {
-    const dv = new DataView(arrayBuffer);
-    const magic = dv.getUint32(0, true);
-    if (magic !== 0x46546C67) {
-      throw new Error('Invalid GLB magic header');
+    const dataView = new DataView(arrayBuffer);
+    const magic = dataView.getUint32(0, true);
+    if (magic !== 0x46546C67) { // 'glTF'
+      throw new Error('Not valid glTF binary');
     }
-    const jsonChunkLength = dv.getUint32(12, true);
+    const jsonChunkLength = dataView.getUint32(12, true);
     const jsonBytes = new Uint8Array(arrayBuffer, 20, jsonChunkLength);
-    const gltf = JSON.parse(new TextDecoder('utf-8').decode(jsonBytes));
+    const jsonString = new TextDecoder('utf-8').decode(jsonBytes);
+    const gltfJson = JSON.parse(jsonString);
 
-    const binChunkHeaderOffset = 20 + jsonChunkLength;
-    const binByteOffset = binChunkHeaderOffset + 8;
+    const binChunkOffset = 20 + jsonChunkLength;
+    const binChunkLength = dataView.getUint32(binChunkOffset, true);
+    const binData = new Uint8Array(arrayBuffer, binChunkOffset + 8, binChunkLength);
 
     const primitivesOut = [];
-    const mesh = gltf.meshes[0];
-    mesh.primitives.forEach((prim) => {
-      const posAcc = gltf.accessors[prim.attributes.POSITION];
-      const normAcc = gltf.accessors[prim.attributes.NORMAL];
-      const idxAcc = gltf.accessors[prim.indices];
+    if (gltfJson.meshes) {
+      gltfJson.meshes.forEach((mesh) => {
+        mesh.primitives.forEach((prim) => {
+          if (prim.attributes && prim.attributes.POSITION !== undefined) {
+            const accessor = gltfJson.accessors[prim.attributes.POSITION];
+            const bufferView = gltfJson.bufferViews[accessor.bufferView];
+            const byteOffset = (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+            const count = accessor.count;
+            const float32Array = new Float32Array(binData.buffer, binData.byteOffset + byteOffset, count * 3);
+            primitivesOut.push({
+              positions: float32Array,
+              count: count
+            });
+          }
+        });
+      });
+    }
 
-      const posBV = gltf.bufferViews[posAcc.bufferView];
-      const normBV = gltf.bufferViews[normAcc.bufferView];
-      const idxBV = gltf.bufferViews[idxAcc.bufferView];
-
-      const positions = new Float32Array(arrayBuffer, binByteOffset + (posBV.byteOffset || 0), posAcc.count * 3);
-      const normals = new Float32Array(arrayBuffer, binByteOffset + (normBV.byteOffset || 0), normAcc.count * 3);
-      const indices = new Uint16Array(arrayBuffer, binByteOffset + (idxBV.byteOffset || 0), idxAcc.count);
-
-      const mat = gltf.materials[prim.material || 0];
-      const baseColor = (mat && mat.pbrMetallicRoughness && mat.pbrMetallicRoughness.baseColorFactor) || [0.85, 0.65, 0.3, 1.0];
-
-      primitivesOut.push({ positions, normals, indices, baseColor });
-    });
-
+    if (primitivesOut.length === 0) {
+      return generateProceduralDish('parsed');
+    }
     return primitivesOut;
   }
 
-  // 6. Open Dish AR Modal & Synchronize <model-viewer> + Interactive 3D Fallback
+  function generateProceduralDish(name) {
+    const positions = [];
+    const segments = 24;
+    for (let i = 0; i < segments; i++) {
+      const a1 = (i / segments) * Math.PI * 2;
+      const a2 = ((i + 1) / segments) * Math.PI * 2;
+      positions.push(0, 0, 0);
+      positions.push(Math.cos(a1) * 0.12, 0.02, Math.sin(a1) * 0.12);
+      positions.push(Math.cos(a2) * 0.12, 0.02, Math.sin(a2) * 0.12);
+
+      positions.push(Math.cos(a1) * 0.08, 0.06, Math.sin(a1) * 0.08);
+      positions.push(Math.cos(a2) * 0.08, 0.06, Math.sin(a2) * 0.08);
+      positions.push(0, 0.08, 0);
+    }
+    return [{ positions: new Float32Array(positions), count: positions.length / 3 }];
+  }
+
+  // 7. Open Dish AR Modal & Synchronize Holographic Hotspots
   async function openDishARModal(dish) {
     activeDish = dish;
+    const isVeg = dish.dietary === 'VEG';
+    const dietTag = document.getElementById('modal-dish-dietary');
+    dietTag.className = 'dietary-tag ' + (isVeg ? 'veg' : 'nonveg');
+    dietTag.textContent = isVeg ? '🟢 VEG' : '🔴 NON-VEG';
+
     document.getElementById('modal-dish-category').textContent = dish.category.toUpperCase();
     document.getElementById('modal-dish-title').textContent = dish.title;
     document.getElementById('modal-dish-price').textContent = dish.price;
     document.getElementById('modal-dish-calories').textContent = dish.calories;
     document.getElementById('modal-dish-desc').textContent = dish.description;
     document.getElementById('hud-dimensions').textContent = dish.dimensions;
-    document.getElementById('hud-asset-pair').textContent = `${dish.glbSrc.replace('models/', '')} / .usdz`;
 
-    const allergenContainer = document.getElementById('modal-allergens');
-    allergenContainer.innerHTML = dish.allergens
-      .map((a) => `<span class="meta-tag">Allergen: ${a}</span>`)
-      .join('');
+    // Render summary cards below description
+    const previewContainer = document.getElementById('modal-hotspot-cards');
+    if (dish.hotspots && dish.hotspots.length > 0) {
+      previewContainer.innerHTML = dish.hotspots.map((h) => `
+        <div class="hologram-card">
+          <div class="card-title">${h.emoji} ${h.name}</div>
+          <div class="card-benefit">${h.benefit1}</div>
+        </div>
+      `).join('');
+    } else {
+      previewContainer.innerHTML = '';
+    }
 
-    // Configure <model-viewer> attributes dynamically
+    // Configure <model-viewer>
     modelViewer.setAttribute('src', dish.glbSrc);
     modelViewer.setAttribute('ios-src', dish.usdzSrc);
     modelViewer.setAttribute('poster', dish.posterSrc);
-    modelViewer.setAttribute('alt', `3D model of ${dish.title}`);
+    modelViewer.setAttribute('alt', `4D model of ${dish.title}`);
     modelViewer.setAttribute('camera-orbit', dish.cameraOrbit);
+
+    // Inject Floating Hotspots into <model-viewer> (Matching Video 4)
+    modelHotspotsContainer.innerHTML = '';
+    if (showHotspots && dish.hotspots) {
+      dish.hotspots.forEach((h, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'ar-hotspot-slot';
+        btn.setAttribute('slot', `hotspot-${idx}`);
+        btn.setAttribute('data-position', h.pos);
+        btn.setAttribute('data-normal', '0 1 0');
+        btn.innerHTML = `
+          <span class="hotspot-title">${h.emoji} ${h.name}</span>
+          <span class="hotspot-sub">${h.benefit1}</span>
+        `;
+        modelHotspotsContainer.appendChild(btn);
+      });
+    }
 
     arModal.classList.add('open');
     arModal.setAttribute('aria-hidden', 'false');
 
-    // Load binary .glb into our hardware-accelerated 3D orbital turntable as well
+    // Launch fallback turntable
     const primitives = await preloadGlbAsset(dish.glbSrc);
     startOrbitalTurntable(primitives);
   }
@@ -288,11 +414,10 @@
     stopOrbitalTurntable();
   }
 
-  // 7. Interactive 3D GLB Orbital Renderer (Defensive Fallback + Layer X-Ray)
+  // 8. Interactive 3D Turntable Fallback with Chef Mascot
   let animFrameId = null;
   let yaw = 0.5;
   let pitch = 0.42;
-  let zoom = 1.0;
   let isDragging = false;
   let lastX = 0;
   let lastY = 0;
@@ -300,18 +425,8 @@
 
   function startOrbitalTurntable(primitives) {
     currentPrimitives = primitives;
-    const customViewerReady = typeof customElements !== 'undefined' && customElements.get('model-viewer');
-
-    if (!customViewerReady || window.__MODEL_VIEWER_SCRIPT_ERROR__ || explodeLayers) {
-      fallbackBanner.hidden = false;
-      fallbackCanvas.style.opacity = '1';
-      fallbackCanvas.style.pointerEvents = 'auto';
-    } else {
-      // Keep interactive 3D canvas visible seamlessly behind or when X-Ray is toggled
-      fallbackBanner.hidden = false;
-      fallbackCanvas.style.opacity = '1';
-      fallbackCanvas.style.pointerEvents = 'auto';
-    }
+    fallbackBanner.hidden = false;
+    fallbackCanvas.style.opacity = '1';
 
     if (animFrameId) cancelAnimationFrame(animFrameId);
     const ctx = fallbackCanvas.getContext('2d');
@@ -332,11 +447,17 @@
         yaw += 0.012;
       }
 
-      // Draw AR spatial radar rings on table plane
+      // Draw table plane radar rings
       drawSpatialTableGrid(ctx, w, h, dpr);
 
+      // Draw mesh geometry
       if (currentPrimitives && currentPrimitives.length > 0) {
         drawGlbPrimitives(ctx, w, h, dpr, currentPrimitives);
+      }
+
+      // Draw 3D Chef Mascot if enabled (Matching Video 1 & 2)
+      if (showChefMascot) {
+        drawChefMascot(ctx, w, h, dpr);
       }
 
       animFrameId = requestAnimationFrame(renderLoop);
@@ -354,232 +475,212 @@
 
   function drawSpatialTableGrid(ctx, w, h, dpr) {
     const cx = w * 0.5;
-    const cy = h * 0.64;
+    const cy = h * 0.65;
     ctx.save();
     ctx.strokeStyle = 'rgba(229, 169, 60, 0.28)';
     ctx.lineWidth = 1.2 * dpr;
 
-    [75, 115, 155].forEach((radius, idx) => {
-      const r = radius * dpr * zoom * (fixedScale ? 1.0 : 0.85);
-      const ry = r * Math.max(0.22, Math.sin(pitch));
+    for (let r = 50 * dpr; r <= 150 * dpr; r += 50 * dpr) {
       ctx.beginPath();
-      ctx.ellipse(cx, cy, r, ry, 0, 0, Math.PI * 2);
-      if (idx === 1) ctx.setLineDash([6 * dpr, 4 * dpr]);
-      else ctx.setLineDash([]);
+      ctx.ellipse(cx, cy, r, r * 0.38, 0, 0, Math.PI * 2);
       ctx.stroke();
-    });
+    }
     ctx.restore();
   }
 
   function drawGlbPrimitives(ctx, w, h, dpr, primitives) {
     const cx = w * 0.5;
-    const cy = h * 0.63;
-    const scale = Math.min(w, h) * 3.1 * zoom * (fixedScale ? 1.0 : 0.85);
+    const cy = h * 0.62;
+    const scale = 850 * dpr;
     const cosY = Math.cos(yaw);
     const sinY = Math.sin(yaw);
     const cosP = Math.cos(pitch);
     const sinP = Math.sin(pitch);
-    const preset = LIGHTING_PRESETS[lightingPresetIndex];
 
-    const faces = [];
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 169, 60, 0.65)';
+    ctx.strokeStyle = '#E5A93C';
+    ctx.lineWidth = 1 * dpr;
 
-    primitives.forEach((prim, layerIdx) => {
+    primitives.forEach((prim) => {
       const pos = prim.positions;
-      const norm = prim.normals;
-      const idx = prim.indices;
-      const baseColor = prim.baseColor;
-      const yOffset = explodeLayers ? layerIdx * 0.018 : 0;
+      const step = 9; // Draw sample of triangles
+      for (let i = 0; i < pos.length - 8; i += step) {
+        const x1 = pos[i], y1 = pos[i + 1], z1 = pos[i + 2];
+        const x2 = pos[i + 3], y2 = pos[i + 4], z2 = pos[i + 5];
+        const x3 = pos[i + 6], y3 = pos[i + 7], z3 = pos[i + 8];
 
-      // Decimate step for ultra-fast 60fps canvas rasterization
-      for (let i = 0; i < idx.length; i += 3) {
-        const i0 = idx[i] * 3;
-        const i1 = idx[i + 1] * 3;
-        const i2 = idx[i + 2] * 3;
+        function project(x, y, z) {
+          const rx = x * cosY - z * sinY;
+          const rz = x * sinY + z * cosY;
+          const ry = y * cosP - rz * sinP;
+          return {
+            px: cx + rx * scale,
+            py: cy - ry * scale
+          };
+        }
 
-        const x0 = pos[i0], y0 = pos[i0 + 1] + yOffset, z0 = pos[i0 + 2];
-        const x1 = pos[i1], y1 = pos[i1 + 1] + yOffset, z1 = pos[i1 + 2];
-        const x2 = pos[i2], y2 = pos[i2 + 1] + yOffset, z2 = pos[i2 + 2];
+        const p1 = project(x1, y1, z1);
+        const p2 = project(x2, y2, z2);
+        const p3 = project(x3, y3, z3);
 
-        // Rotate Y then X
-        const rx0 = x0 * cosY - z0 * sinY;
-        const rz0 = x0 * sinY + z0 * cosY;
-        const ry0 = y0 * cosP - rz0 * sinP;
-        const fz0 = y0 * sinP + rz0 * cosP;
+        ctx.beginPath();
+        ctx.moveTo(p1.px, p1.py);
+        ctx.lineTo(p2.px, p2.py);
+        ctx.lineTo(p3.px, p3.py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+  }
 
-        const rx1 = x1 * cosY - z1 * sinY;
-        const rz1 = x1 * sinY + z1 * cosY;
-        const ry1 = y1 * cosP - rz1 * sinP;
-        const fz1 = y1 * sinP + rz1 * cosP;
+  function drawChefMascot(ctx, w, h, dpr) {
+    const cx = w * 0.5;
+    const cy = h * 0.38;
 
-        const rx2 = x2 * cosY - z2 * sinY;
-        const rz2 = x2 * sinY + z2 * cosY;
-        const ry2 = y2 * cosP - rz2 * sinP;
-        const fz2 = y2 * sinP + rz2 * cosP;
+    ctx.save();
+    // Mascot Speech Bubble
+    ctx.fillStyle = '#1E1712';
+    ctx.strokeStyle = '#E5A93C';
+    ctx.lineWidth = 1.5 * dpr;
+    const bw = 170 * dpr;
+    const bh = 34 * dpr;
+    const bx = cx - bw * 0.5;
+    const by = cy - 70 * dpr;
 
-        // Average normal for lighting
-        const nx = (norm[i0] + norm[i1] + norm[i2]) / 3;
-        const ny = (norm[i0 + 1] + norm[i1 + 1] + norm[i2 + 1]) / 3;
-        const nz = (norm[i0 + 2] + norm[i1 + 2] + norm[i2 + 2]) / 3;
-        const rnx = nx * cosY - nz * sinY;
-        const rnz = nx * sinY + nz * cosY;
-        const rny = ny * cosP - rnz * sinP;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 8 * dpr);
+    ctx.fill();
+    ctx.stroke();
 
-        const lightDot = Math.max(0.25, rnx * 0.45 + rny * 0.72 + 0.35) * preset.exposure;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `bold ${10 * dpr}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('👨‍🍳 "Welcome! Enjoy 4D Dining"', cx, by + 21 * dpr);
 
-        faces.push({
-          sx0: cx + rx0 * scale,
-          sy0: cy - ry0 * scale,
-          sx1: cx + rx1 * scale,
-          sy1: cy - ry1 * scale,
-          sx2: cx + rx2 * scale,
-          sy2: cy - ry2 * scale,
-          depth: (fz0 + fz1 + fz2) / 3,
-          r: Math.min(255, Math.floor(baseColor[0] * 255 * lightDot * preset.tint[0])),
-          g: Math.min(255, Math.floor(baseColor[1] * 255 * lightDot * preset.tint[1])),
-          b: Math.min(255, Math.floor(baseColor[2] * 255 * lightDot * preset.tint[2])),
-          a: baseColor[3] !== undefined ? baseColor[3] : 1.0
-        });
+    // Chef Avatar
+    ctx.font = `${32 * dpr}px sans-serif`;
+    ctx.fillText('👨‍🍳', cx, cy - 20 * dpr);
+    ctx.restore();
+  }
+
+  // 9. Input & Control Event Listeners
+  function setupControls() {
+    // Modal Close
+    modalCloseBtn.addEventListener('click', closeDishARModal);
+    modalBackdrop.addEventListener('click', closeDishARModal);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDishARModal();
+    });
+
+    // Auto-Rotate Toggle
+    const btnRotate = document.getElementById('btn-toggle-rotate');
+    btnRotate.addEventListener('click', () => {
+      autoRotate = !autoRotate;
+      btnRotate.classList.toggle('active', autoRotate);
+      if (modelViewer) {
+        if (autoRotate) modelViewer.setAttribute('auto-rotate', '');
+        else modelViewer.removeAttribute('auto-rotate');
       }
     });
 
-    faces.sort((a, b) => a.depth - b.depth);
-
-    for (let i = 0; i < faces.length; i++) {
-      const f = faces[i];
-      ctx.fillStyle = `rgba(${f.r},${f.g},${f.b},${f.a})`;
-      ctx.beginPath();
-      ctx.moveTo(f.sx0, f.sy0);
-      ctx.lineTo(f.sx1, f.sy1);
-      ctx.lineTo(f.sx2, f.sy2);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-
-  // Pointer gestures on 3D canvas
-  fallbackCanvas.addEventListener('pointerdown', (e) => {
-    isDragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    fallbackCanvas.setPointerCapture(e.pointerId);
-  });
-
-  fallbackCanvas.addEventListener('pointermove', (e) => {
-    if (!isDragging) return;
-    const dx = e.clientX - lastX;
-    const dy = e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    yaw += dx * 0.012;
-    pitch = Math.max(0.15, Math.min(1.35, pitch + dy * 0.01));
-  });
-
-  fallbackCanvas.addEventListener('pointerup', () => {
-    isDragging = false;
-  });
-
-  fallbackCanvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    zoom = Math.max(0.65, Math.min(1.65, zoom - e.deltaY * 0.001));
-  }, { passive: false });
-
-  // 8. Wire Interactive Controls & AR Launch
-  document.getElementById('btn-toggle-rotate').addEventListener('click', (e) => {
-    autoRotate = !autoRotate;
-    e.currentTarget.classList.toggle('active', autoRotate);
-    if (autoRotate) modelViewer.setAttribute('auto-rotate', '');
-    else modelViewer.removeAttribute('auto-rotate');
-  });
-
-  document.getElementById('btn-toggle-explode').addEventListener('click', (e) => {
-    explodeLayers = !explodeLayers;
-    e.currentTarget.classList.toggle('active', explodeLayers);
-  });
-
-  document.getElementById('btn-toggle-scale').addEventListener('click', (e) => {
-    fixedScale = !fixedScale;
-    e.currentTarget.classList.toggle('active', fixedScale);
-    e.currentTarget.textContent = fixedScale ? '1:1 True Scale' : 'Auto Fit Scale';
-    modelViewer.setAttribute('ar-scale', fixedScale ? 'fixed' : 'auto');
-  });
-
-  document.getElementById('btn-cycle-lighting').addEventListener('click', (e) => {
-    lightingPresetIndex = (lightingPresetIndex + 1) % LIGHTING_PRESETS.length;
-    const p = LIGHTING_PRESETS[lightingPresetIndex];
-    e.currentTarget.textContent = '☀ ' + p.name;
-    modelViewer.setAttribute('exposure', String(p.exposure));
-    document.getElementById('viewer-stage').style.background =
-      `radial-gradient(circle at 50% 45%, ${p.bgTop} 0%, ${p.bgBot} 78%)`;
-  });
-
-  document.getElementById('btn-reset-camera').addEventListener('click', () => {
-    yaw = 0.5;
-    pitch = 0.42;
-    zoom = 1.0;
-    explodeLayers = false;
-    document.getElementById('btn-toggle-explode').classList.remove('active');
-  });
-
-  document.getElementById('btn-launch-ar-direct').addEventListener('click', () => {
-    if (modelViewer && typeof modelViewer.activateAR === 'function' && modelViewer.canActivateAR) {
-      modelViewer.activateAR();
-    } else if (window.AndroidBridge && typeof window.AndroidBridge.launchNativeSceneViewer === 'function') {
-      window.AndroidBridge.launchNativeSceneViewer(activeDish.id, activeDish.title, activeDish.glbSrc);
-    } else {
-      fallbackBanner.hidden = false;
-      document.getElementById('fallback-banner-text').textContent =
-        'WebAR hardware unavailable in this browser — Interactive 3D 1:1 Orbital Turntable active.';
-    }
-  });
-
-  modalCloseBtn.addEventListener('click', closeDishARModal);
-  modalBackdrop.addEventListener('click', closeDishARModal);
-
-  // Client-side .GLB File Upload Handler (Zero-Server Instant Preview)
-  const glbUploadInput = document.getElementById('glb-upload-input');
-  if (glbUploadInput) {
-    glbUploadInput.addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const objectUrl = URL.createObjectURL(file);
-      const customDish = {
-        id: 'uploaded-' + Date.now(),
-        title: file.name.replace(/\.(glb|gltf|usdz)$/i, ''),
-        category: 'Burgers & Mains',
-        price: '$24.00',
-        calories: Math.round(file.size / 1024) + ' KB • Custom 3D Asset',
-        dimensions: 'Ø 18cm × H 10cm (1:1)',
-        description: 'Custom uploaded 3D model (' + file.name + ') loaded via Blob URL & Binary glTF 2.0 ArrayBuffer.',
-        glbSrc: objectUrl,
-        usdzSrc: objectUrl,
-        posterSrc: 'images/hero_bistro.jpg',
-        allergens: ['Custom .GLB Upload'],
-        cameraOrbit: '20deg 70deg 0.42m'
-      };
-      try {
-        const buffer = await file.arrayBuffer();
-        const parsed = parseGlbBinary(buffer);
-        glbMeshCache.set(objectUrl, parsed);
-      } catch (err) {
-        console.warn('Custom GLB parse fallback:', err);
-      }
-      MENU_ITEMS.unshift(customDish);
-      renderMenuGrid();
-      openDishARModal(customDish);
+    // Hotspot Toggle
+    const btnHotspots = document.getElementById('btn-toggle-hotspots');
+    btnHotspots.addEventListener('click', () => {
+      showHotspots = !showHotspots;
+      btnHotspots.classList.toggle('active', showHotspots);
+      modelHotspotsContainer.style.display = showHotspots ? 'block' : 'none';
     });
+
+    // Chef Mascot Toggle
+    const btnChef = document.getElementById('btn-toggle-chef');
+    btnChef.addEventListener('click', () => {
+      showChefMascot = !showChefMascot;
+      btnChef.classList.toggle('active', showChefMascot);
+      const chefHud = document.getElementById('hud-chef-status');
+      chefHud.textContent = showChefMascot ? '👨‍🍳 3D Chef Active' : '👨‍🍳 Chef Hidden';
+    });
+
+    // Lighting Toggle
+    const btnLighting = document.getElementById('btn-cycle-lighting');
+    btnLighting.addEventListener('click', () => {
+      lightingPresetIndex = (lightingPresetIndex + 1) % LIGHTING_PRESETS.length;
+      const preset = LIGHTING_PRESETS[lightingPresetIndex];
+      btnLighting.textContent = `☀ ${preset.name}`;
+      if (modelViewer) {
+        modelViewer.setAttribute('exposure', String(preset.exposure));
+      }
+    });
+
+    // Direct Native AR Trigger
+    const btnLaunchAr = document.getElementById('btn-launch-ar-direct');
+    btnLaunchAr.addEventListener('click', () => {
+      if (modelViewer && typeof modelViewer.activateAR === 'function') {
+        modelViewer.activateAR();
+      } else {
+        alert('Launching 1:1 Augmented Reality on table plane.');
+      }
+    });
+
+    // Add To Order CTA
+    const btnAddOrder = document.getElementById('btn-add-order');
+    btnAddOrder.addEventListener('click', () => {
+      btnAddOrder.textContent = 'ADDED TO ORDER ✓';
+      btnAddOrder.style.borderColor = '#4CAF50';
+      btnAddOrder.style.color = '#4CAF50';
+      setTimeout(() => {
+        btnAddOrder.textContent = 'ADD TO ORDER';
+        btnAddOrder.style.borderColor = '';
+        btnAddOrder.style.color = '';
+      }, 1500);
+    });
+
+    // Fallback Canvas Touch/Mouse Drag Orbit
+    fallbackCanvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      yaw += dx * 0.01;
+      pitch = Math.max(0.1, Math.min(1.4, pitch + dy * 0.01));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    fallbackCanvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    fallbackCanvas.addEventListener('touchmove', (e) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - lastX;
+      const dy = e.touches[0].clientY - lastY;
+      yaw += dx * 0.015;
+      pitch = Math.max(0.1, Math.min(1.4, pitch + dy * 0.015));
+      lastX = e.touches[0].clientX;
+      lastY = e.touches[0].clientY;
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => { isDragging = false; });
   }
 
-  // Expose public method so Native Android host can jump directly to a dish
-  window.AuraWebAR = {
-    openDishById: function (dishId) {
-      const found = MENU_ITEMS.find((item) => item.id === dishId) || MENU_ITEMS[0];
-      openDishARModal(found);
-    }
-  };
-
-  // Initialize
-  detectARCapabilities();
-  renderCategories();
-  renderMenuGrid();
-  preloadGlbAsset(MENU_ITEMS[0].glbSrc);
+  // Init
+  window.addEventListener('DOMContentLoaded', () => {
+    detectARCapabilities();
+    setupDietaryFilters();
+    renderCategories();
+    renderMenuGrid();
+    setupControls();
+  });
 })();

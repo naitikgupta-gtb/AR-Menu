@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#14110F" />
-  <title>Aura AR Bistro — Spatial 3D &amp; WebAR Menu</title>
+  <title>The Golden Oak — 4D Smart Menu &amp; WebAR</title>
 
   <!-- Resource Hints for Rapid Mobile Asset Preloading -->
   <link rel="preconnect" href="https://ajax.googleapis.com" crossorigin />
@@ -22,12 +22,12 @@
   <!-- Top Sticky Header -->
   <header class="site-header">
     <div class="brand-group">
-      <span class="brand-badge">SPATIAL GASTRONOMY</span>
-      <h1 class="brand-title">Aura AR Bistro</h1>
+      <span class="brand-badge">THE GOLDEN OAK</span>
+      <h1 class="brand-title">4D Smart Menu</h1>
     </div>
     <div class="header-status">
       <label for="glb-upload-input" class="capability-pill" style="cursor:pointer; border-color:#E5A93C; color:#E5A93C; margin-right:6px;">
-        <span>+ Upload .GLB</span>
+        <span>+ 3D Model</span>
       </label>
       <input type="file" id="glb-upload-input" accept=".glb,.gltf,.usdz" hidden />
       <span id="ar-capability-pill" class="capability-pill" role="status">
@@ -37,29 +37,36 @@
     </div>
   </header>
 
-  <!-- Hero Banner -->
+  <!-- Hero Banner (Matching Video 4) -->
   <section class="hero-banner" aria-label="Featured Spatial Dining Experience">
-    <img src="images/hero_bistro.jpg" alt="Aura Bistro AR Table Preview" class="hero-img" />
+    <img src="images/hero_bistro.jpg" alt="The Golden Oak 4D Smart Menu Preview" class="hero-img" />
     <div class="hero-overlay">
-      <p class="hero-kicker">1:1 TRUE-SCALE TABLE PROJECTION</p>
-      <h2 class="hero-headline">Inspect Every Dish in 3D Before You Order</h2>
+      <p class="hero-kicker">SEE IT BEFORE YOU BELIEVE IT</p>
+      <h2 class="hero-headline">Experience Dishes On Your Table in 4D AR</h2>
       <p class="hero-subtext">
-        Tap any dish to launch interactive 3D orbital inspection or project life-size portions directly onto your table via AR Quick Look (.usdz) &amp; Scene Viewer (.glb).
+        Interactive 3D dishes on your table with floating holographic nutrition callouts and animated 3D chef mascot. Powered by WebAR (<model-viewer>), iOS Quick Look (.usdz) &amp; Android Scene Viewer (.glb).
       </p>
     </div>
   </section>
 
-  <!-- Sticky Category Navigation -->
+  <!-- Veg / Non-Veg Dietary Filter Bar (Matching Video 4) -->
+  <div class="dietary-filter-container">
+    <button type="button" class="dietary-btn active" data-diet="ALL">All Dishes</button>
+    <button type="button" class="dietary-btn" data-diet="VEG"><span class="diet-dot veg-dot"></span> Pure Veg</button>
+    <button type="button" class="dietary-btn" data-diet="NON_VEG"><span class="diet-dot nonveg-dot"></span> Non-Veg</button>
+  </div>
+
+  <!-- Sticky Category Navigation (Starters, Main Course, Burgers, Salads, Pizza, Desserts) -->
   <nav class="category-nav" aria-label="Food Categories">
     <div class="category-scroll" id="category-bar" role="tablist">
-      <!-- Dynamically populated by app.js -->
+      <!-- Populated by app.js -->
     </div>
   </nav>
 
   <!-- Main Menu Grid -->
   <main class="menu-container">
     <section id="menu-grid" class="menu-grid" aria-live="polite">
-      <!-- Dish cards rendered via DocumentFragment in app.js -->
+      <!-- Dish cards rendered by app.js -->
     </section>
   </main>
 
@@ -71,7 +78,10 @@
       <!-- Modal Top Bar -->
       <div class="modal-topbar">
         <div class="modal-title-wrap">
-          <span id="modal-dish-category" class="modal-category-tag">SIGNATURE</span>
+          <div class="modal-badge-row">
+            <span id="modal-dish-dietary" class="dietary-tag veg">VEG</span>
+            <span id="modal-dish-category" class="modal-category-tag">SIGNATURE</span>
+          </div>
           <h2 id="modal-dish-title" class="modal-title">Dish Name</h2>
         </div>
         <button type="button" id="modal-close-btn" class="icon-btn" aria-label="Close 3D Viewer">
@@ -104,6 +114,9 @@
           interaction-prompt="auto"
           loading="eager">
 
+          <!-- Dynamic Hotspots for Holographic AR Nutrition Callout Cards -->
+          <div id="model-hotspots-container"></div>
+
           <!-- Custom Loading Progress Bar -->
           <div class="progress-bar-container" slot="progress-bar" id="progress-bar-container">
             <div class="progress-bar-fill" id="progress-bar-fill"></div>
@@ -111,7 +124,7 @@
 
           <!-- Custom Native AR Launch Button inside <model-viewer> -->
           <button slot="ar-button" class="native-ar-slot-btn" id="native-ar-slot-btn">
-            <span class="ar-icon">⬡</span> View in Room (1:1 AR)
+            <span class="ar-icon">⬡</span> VIEW ON YOUR TABLE (4D AR)
           </button>
         </model-viewer>
 
@@ -120,15 +133,15 @@
 
         <!-- Spatial HUD Overlays -->
         <div class="spatial-hud-top">
-          <span class="hud-chip" id="hud-dimensions">Ø 18cm × H 11cm</span>
-          <span class="hud-chip" id="hud-asset-pair">burger.glb / .usdz</span>
+          <span class="hud-chip" id="hud-dimensions">Ø 24cm × H 12cm</span>
+          <span class="hud-chip" id="hud-chef-status">👨‍🍳 3D Chef Active</span>
         </div>
 
         <!-- Interactive 3D Controls Bar -->
         <div class="viewer-controls-bar">
           <button type="button" class="ctrl-pill active" id="btn-toggle-rotate">⟳ Auto-Orbit</button>
-          <button type="button" class="ctrl-pill" id="btn-toggle-explode"> layers X-Ray</button>
-          <button type="button" class="ctrl-pill" id="btn-toggle-scale">1:1 True Scale</button>
+          <button type="button" class="ctrl-pill active" id="btn-toggle-hotspots">🥑 AR Nutrition Tags</button>
+          <button type="button" class="ctrl-pill" id="btn-toggle-chef">👨‍🍳 3D Chef</button>
           <button type="button" class="ctrl-pill" id="btn-cycle-lighting">☀ Warm Bistro</button>
         </div>
 
@@ -142,24 +155,25 @@
       <div class="modal-details">
         <div class="modal-meta-row">
           <span id="modal-dish-price" class="modal-price">$24.00</span>
-          <span id="modal-dish-calories" class="modal-calories">780 kcal • Prep 12m</span>
+          <span id="modal-dish-calories" class="modal-calories">🔥 450 kcal • Prep 10m</span>
         </div>
         <p id="modal-dish-desc" class="modal-desc"></p>
 
-        <div class="allergen-row" id="modal-allergens"></div>
+        <!-- Floating Nutrition Cards Summary -->
+        <div class="hologram-cards-preview" id="modal-hotspot-cards"></div>
 
         <div class="modal-actions">
           <button type="button" id="btn-launch-ar-direct" class="btn-primary-ar">
-            <span class="ar-cube-glyph">⬡</span> Launch AR in Room
+            <span class="ar-cube-glyph">⬡</span> VIEW ON YOUR TABLE
           </button>
-          <button type="button" id="btn-reset-camera" class="btn-secondary-orbit">
-            Reset 3D View
+          <button type="button" id="btn-add-order" class="btn-secondary-orbit">
+            ADD TO ORDER
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="app.js" defer></script>
+  <script src="app.js"></script>
 </body>
 </html>

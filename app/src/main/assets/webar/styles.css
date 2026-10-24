@@ -504,3 +504,154 @@ model-viewer {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Dietary Filter Chips */
+.dietary-filter-container {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.dietary-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-cream);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dietary-btn.active {
+  background: var(--accent-gold);
+  color: #14110F;
+  border-color: var(--accent-gold);
+}
+
+.diet-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.veg-dot {
+  background: #4CAF50;
+  box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+}
+
+.nonveg-dot {
+  background: #E53935;
+  box-shadow: 0 0 6px rgba(229, 57, 53, 0.6);
+}
+
+.dietary-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.dietary-tag.veg {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81C784;
+  border: 1px solid #4CAF50;
+}
+
+.dietary-tag.nonveg {
+  background: rgba(229, 57, 53, 0.2);
+  color: #E57373;
+  border: 1px solid #E53935;
+}
+
+.modal-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+/* Holographic AR Nutrition Callout Cards (Floating above 3D Model in <model-viewer>) */
+.ar-hotspot-slot {
+  background: rgba(20, 16, 13, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--accent-gold);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #FFFFFF;
+  font-size: 11px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: auto;
+  cursor: pointer;
+  transform: translate(-50%, -100%);
+  animation: floatSubtle 3s ease-in-out infinite alternate;
+}
+
+.ar-hotspot-slot::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  box-shadow: 0 0 6px var(--accent-gold);
+}
+
+@keyframes floatSubtle {
+  from { transform: translate(-50%, -100%) translateY(0); }
+  to { transform: translate(-50%, -100%) translateY(-5px); }
+}
+
+.hotspot-title {
+  font-weight: 700;
+  color: var(--accent-gold);
+  font-size: 11px;
+}
+
+.hotspot-sub {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.hologram-cards-preview {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.hologram-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 110px;
+  font-size: 11px;
+}
+
+.hologram-card .card-title {
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.hologram-card .card-benefit {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+

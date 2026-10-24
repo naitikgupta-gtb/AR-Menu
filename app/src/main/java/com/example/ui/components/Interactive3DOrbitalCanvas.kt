@@ -20,7 +20,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -56,11 +56,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.model.ArMenuDish
+import com.example.model.ArNutritionHotspot
 import com.example.model.IngredientLayer3D
 import com.example.model.LightingPreset
 import com.example.model.ViewerMode
+import com.example.ui.theme.BistroElevated
 import com.example.ui.theme.JetBrainsMonoFamily
 import com.example.ui.theme.ObsidianBg
+import com.example.ui.theme.PlusJakartaSansFamily
 import com.example.ui.theme.SaffronGold
 import com.example.ui.theme.SpatialEmerald
 import kotlin.math.cos
@@ -69,10 +72,12 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Interactive 3D & Spatial AR Viewport supporting:
- * 1. ORBITAL_3D: 60fps 3D multi-layer dish turntable with touch drag orbit, pinch zoom, and exploded layer X-Ray.
- * 2. ROOM_AR_TABLE: Simulated 1:1 AR tabletop surface placement with perspective dining table grid, reticle, and dimension rings.
- * 3. MODEL_VIEWER_WEB: Embedded self-hosted HTML5/JS <model-viewer> engine loading real binary .glb files from assets/webar/models/.
+ * 4D Smart Menu Spatial AR Viewport:
+ * 1. ROOM_AR_TABLE: 1:1 true-scale table projection with wooden tabletop surface, reticle dots,
+ *    and FLOATING AR NUTRITION & INGREDIENT HOLOGRAPHIC CALLOUTS (matching Video 4!).
+ * 2. ANIMATED 3D CHEF MASCOT standing on the plate welcoming the guest (matching Video 1 & 2!).
+ * 3. ORBITAL_3D: 60fps 3D multi-layer dish turntable with touch drag orbit & pinch zoom.
+ * 4. MODEL_VIEWER_WEB: Embedded self-hosted <model-viewer> engine with AR hotspot annotations.
  */
 @Composable
 fun Interactive3DOrbitalCanvas(
@@ -80,6 +85,8 @@ fun Interactive3DOrbitalCanvas(
     viewerMode: ViewerMode,
     autoRotate: Boolean,
     explodeLayers: Boolean,
+    showChefMascot: Boolean,
+    showNutritionHotspots: Boolean,
     trueScale1To1: Boolean,
     lightingPreset: LightingPreset,
     onLaunchNativeSceneViewer: () -> Unit,
@@ -95,7 +102,7 @@ fun Interactive3DOrbitalCanvas(
     }
 
     var userYaw by remember(dish.id) { mutableFloatStateOf(0.35f) }
-    var userPitch by remember(dish.id) { mutableFloatStateOf(0.46f) }
+    var userPitch by remember(dish.id) { mutableFloatStateOf(0.48f) }
     var userZoom by remember(dish.id) { mutableFloatStateOf(1.0f) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "orbit_rotation")
@@ -103,10 +110,20 @@ fun Interactive3DOrbitalCanvas(
         initialValue = 0f,
         targetValue = (Math.PI * 2).toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 16000, easing = LinearEasing),
+            animation = tween(durationMillis = 18000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "continuous_yaw"
+    )
+
+    val chefWaveAnim by infiniteTransition.animateFloat(
+        initialValue = -12f,
+        targetValue = 18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "chef_wave"
     )
 
     val explodeFactor by animateFloatAsState(
@@ -147,9 +164,9 @@ fun Interactive3DOrbitalCanvas(
             val w = size.width
             val h = size.height
             val cx = w * 0.5f
-            val cy = h * 0.64f
-            val tiltRatio = sin(userPitch).coerceIn(0.22f, 0.88f)
-            val effectiveScale = min(w, h) * 0.36f * userZoom * scaleFactor
+            val cy = h * 0.62f
+            val tiltRatio = sin(userPitch).coerceIn(0.24f, 0.88f)
+            val effectiveScale = min(w, h) * 0.35f * userZoom * scaleFactor
 
             if (viewerMode == ViewerMode.ROOM_AR_TABLE) {
                 drawRoomTableSurface(cx, cy, w, h, tiltRatio, effectiveYaw)
@@ -157,9 +174,9 @@ fun Interactive3DOrbitalCanvas(
                 drawStudioSpatialGrid(cx, cy, effectiveScale, tiltRatio, Color(lightingPreset.rimHex))
             }
 
-            // Draw soft contact shadow under plate
+            // Contact shadow
             drawOval(
-                color = Color.Black.copy(alpha = 0.55f),
+                color = Color.Black.copy(alpha = 0.58f),
                 topLeft = Offset(
                     cx - effectiveScale * 0.98f,
                     cy - effectiveScale * 0.98f * tiltRatio + 8.dp.toPx()
@@ -167,7 +184,7 @@ fun Interactive3DOrbitalCanvas(
                 size = Size(effectiveScale * 1.96f, effectiveScale * 1.96f * tiltRatio)
             )
 
-            // Draw each 3D culinary layer from bottom to top
+            // 3D Dish Layers
             dish.layers3D.forEachIndexed { index, layer ->
                 draw3DIngredientLayer(
                     cx = cx,
@@ -184,18 +201,41 @@ fun Interactive3DOrbitalCanvas(
                 )
             }
 
-            // Draw 1:1 AR Dimension Measurement Ring around base
+            // Miniature 3D Chef Mascot (from Video 1 & 2!)
+            if (showChefMascot) {
+                draw3DChefMascot(
+                    cx = cx,
+                    cy = cy - effectiveScale * 0.52f,
+                    scale = effectiveScale * 0.32f,
+                    waveAngle = chefWaveAnim,
+                    textMeasurer = textMeasurer
+                )
+            }
+
+            // Floating AR Holographic Nutrition & Ingredient Callouts (from Video 4!)
+            if (showNutritionHotspots && dish.nutritionHotspots.isNotEmpty()) {
+                drawFloatingNutritionHotspots(
+                    cx = cx,
+                    cy = cy,
+                    scale = effectiveScale,
+                    tiltRatio = tiltRatio,
+                    hotspots = dish.nutritionHotspots,
+                    textMeasurer = textMeasurer
+                )
+            }
+
+            // 1:1 Scale Dimension Measurement Ring
             drawDimensionRing(
                 cx = cx,
                 cy = cy,
-                radius = effectiveScale * 1.06f,
+                radius = effectiveScale * 1.05f,
                 tiltRatio = tiltRatio,
-                dimensionsText = "${dish.dimensionsLabel} (${if (trueScale1To1) "1:1 Fixed" else "Auto Fit"})",
+                dimensionsText = "${dish.dimensionsLabel} • 1:1 Life Size on Table",
                 textMeasurer = textMeasurer
             )
         }
 
-        // Top HUD Overlay
+        // Top Telemetry Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -205,36 +245,252 @@ fun Interactive3DOrbitalCanvas(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                color = ObsidianBg.copy(alpha = 0.82f),
+                color = ObsidianBg.copy(alpha = 0.88f),
                 shape = RoundedCornerShape(50),
-                border = androidx.compose.foundation.BorderStroke(1.dp, SaffronGold.copy(alpha = 0.35f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, SaffronGold.copy(alpha = 0.45f))
             ) {
                 Text(
-                    text = if (viewerMode == ViewerMode.ROOM_AR_TABLE) {
-                        "⬡ AR TABLE PLANE LOCKED • 1:1"
-                    } else {
-                        "⬡ ${dish.glbAsset.substringAfterLast('/')} • ${dish.polyCount}"
-                    },
+                    text = if (viewerMode == ViewerMode.ROOM_AR_TABLE) "✨ 4D AR TABLE ACTIVE" else "⬡ 3D ORBITAL VIEW",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (viewerMode == ViewerMode.ROOM_AR_TABLE) SpatialEmerald else SaffronGold,
+                    color = SaffronGold,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                 )
             }
 
             Surface(
-                color = ObsidianBg.copy(alpha = 0.82f),
+                color = ObsidianBg.copy(alpha = 0.88f),
                 shape = RoundedCornerShape(50),
-                border = androidx.compose.foundation.BorderStroke(1.dp, SaffronGold.copy(alpha = 0.35f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, SpatialEmerald.copy(alpha = 0.45f))
             ) {
                 Text(
-                    text = "Drag 360° • Pinch Zoom",
+                    text = "Holographic Callouts Active",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SpatialEmerald,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                 )
             }
         }
     }
+}
+
+/**
+ * Draws the exact Floating Holographic AR Nutrition and Ingredient Callout Cards
+ * (as seen in Video 4: The Golden Oak / 4D Smart Menu).
+ */
+private fun DrawScope.drawFloatingNutritionHotspots(
+    cx: Float,
+    cy: Float,
+    scale: Float,
+    tiltRatio: Float,
+    hotspots: List<ArNutritionHotspot>,
+    textMeasurer: TextMeasurer
+) {
+    hotspots.forEach { hotspot ->
+        val targetX = cx + (hotspot.xOffsetRatio * scale * 0.95f)
+        val targetY = cy + (hotspot.yOffsetRatio * scale * tiltRatio * 0.75f)
+
+        // Floating card position above the dish surface
+        val cardX = if (hotspot.xOffsetRatio < 0) {
+            (targetX - 110.dp.toPx()).coerceAtLeast(10.dp.toPx())
+        } else {
+            (targetX + 22.dp.toPx()).coerceAtMost(size.width - 125.dp.toPx())
+        }
+        val cardY = (targetY - 55.dp.toPx()).coerceAtLeast(40.dp.toPx())
+
+        // 1. Glowing anchor point on the food ingredient
+        drawCircle(
+            color = SaffronGold,
+            radius = 3.5.dp.toPx(),
+            center = Offset(targetX, targetY)
+        )
+        drawCircle(
+            color = SaffronGold.copy(alpha = 0.35f),
+            radius = 7.dp.toPx(),
+            center = Offset(targetX, targetY)
+        )
+
+        // 2. AR connection callout line with elbow
+        val elbowX = if (hotspot.xOffsetRatio < 0) cardX + 115.dp.toPx() else cardX
+        val elbowY = cardY + 22.dp.toPx()
+
+        drawLine(
+            color = SaffronGold.copy(alpha = 0.85f),
+            start = Offset(targetX, targetY),
+            end = Offset(elbowX, elbowY),
+            strokeWidth = 1.3.dp.toPx()
+        )
+
+        // 3. Floating Holographic Card Container
+        val cardWidth = 115.dp.toPx()
+        val cardHeight = 44.dp.toPx()
+
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xDD1F1A17),
+                    Color(0xF014110F)
+                ),
+                startY = cardY,
+                endY = cardY + cardHeight
+            ),
+            topLeft = Offset(cardX, cardY),
+            size = Size(cardWidth, cardHeight),
+            cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx())
+        )
+
+        drawRoundRect(
+            color = SaffronGold.copy(alpha = 0.65f),
+            topLeft = Offset(cardX, cardY),
+            size = Size(cardWidth, cardHeight),
+            cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx()),
+            style = Stroke(width = 1.dp.toPx())
+        )
+
+        // 4. Ingredient Title & Icon
+        val titleText = "${hotspot.iconEmoji} ${hotspot.name}"
+        val titleLayout = textMeasurer.measure(
+            text = titleText,
+            style = TextStyle(
+                color = Color(0xFFF7F2EB),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = PlusJakartaSansFamily
+            )
+        )
+        drawText(
+            textLayoutResult = titleLayout,
+            topLeft = Offset(cardX + 7.dp.toPx(), cardY + 5.dp.toPx())
+        )
+
+        // 5. Benefit Pills (e.g. "Low Carbs", "High Protein")
+        val benefitText = "• ${hotspot.benefit1}\n• ${hotspot.benefit2}"
+        val benefitLayout = textMeasurer.measure(
+            text = benefitText,
+            style = TextStyle(
+                color = SpatialEmerald,
+                fontSize = 8.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = JetBrainsMonoFamily,
+                lineHeight = 11.sp
+            )
+        )
+        drawText(
+            textLayoutResult = benefitLayout,
+            topLeft = Offset(cardX + 7.dp.toPx(), cardY + 20.dp.toPx())
+        )
+    }
+}
+
+/**
+ * Draws the Miniature 3D Animated Chef Mascot on the dish (as seen in Video 1 & Video 2).
+ */
+private fun DrawScope.draw3DChefMascot(
+    cx: Float,
+    cy: Float,
+    scale: Float,
+    waveAngle: Float,
+    textMeasurer: TextMeasurer
+) {
+    // Pedestal
+    drawOval(
+        color = Color(0xFFD4AF37),
+        topLeft = Offset(cx - scale * 0.35f, cy + scale * 0.70f),
+        size = Size(scale * 0.70f, scale * 0.22f)
+    )
+
+    // Chef Body / White Apron
+    drawRoundRect(
+        color = Color(0xFFF5F5F5),
+        topLeft = Offset(cx - scale * 0.22f, cy + scale * 0.15f),
+        size = Size(scale * 0.44f, scale * 0.55f),
+        cornerRadius = CornerRadius(8.dp.toPx())
+    )
+
+    // Red neckerchief
+    drawOval(
+        color = Color(0xFFC62828),
+        topLeft = Offset(cx - scale * 0.14f, cy + scale * 0.12f),
+        size = Size(scale * 0.28f, scale * 0.12f)
+    )
+
+    // Chef Head
+    drawCircle(
+        color = Color(0xFFFFD1A4),
+        radius = scale * 0.20f,
+        center = Offset(cx, cy - scale * 0.05f)
+    )
+
+    // Black Mustache
+    drawOval(
+        color = Color(0xFF212121),
+        topLeft = Offset(cx - scale * 0.12f, cy - scale * 0.02f),
+        size = Size(scale * 0.24f, scale * 0.08f)
+    )
+
+    // Eyes
+    drawCircle(color = Color(0xFF1E1E1E), radius = 2.dp.toPx(), center = Offset(cx - scale * 0.07f, cy - scale * 0.08f))
+    drawCircle(color = Color(0xFF1E1E1E), radius = 2.dp.toPx(), center = Offset(cx + scale * 0.07f, cy - scale * 0.08f))
+
+    // Chef Hat (Toque Blanche)
+    val hatPath = Path().apply {
+        moveTo(cx - scale * 0.22f, cy - scale * 0.22f)
+        cubicTo(
+            cx - scale * 0.32f, cy - scale * 0.55f,
+            cx + scale * 0.32f, cy - scale * 0.55f,
+            cx + scale * 0.22f, cy - scale * 0.22f
+        )
+        close()
+    }
+    drawPath(path = hatPath, color = Color.White)
+    drawRoundRect(
+        color = Color(0xFFE0E0E0),
+        topLeft = Offset(cx - scale * 0.22f, cy - scale * 0.22f),
+        size = Size(scale * 0.44f, scale * 0.08f),
+        cornerRadius = CornerRadius(2.dp.toPx())
+    )
+
+    // Waving Hand
+    val handRad = Math.toRadians(waveAngle.toDouble()).toFloat()
+    val handX = cx + scale * 0.32f + 8.dp.toPx() * cos(handRad)
+    val handY = cy + scale * 0.18f - 12.dp.toPx() * sin(handRad)
+
+    drawLine(
+        color = Color.White,
+        start = Offset(cx + scale * 0.20f, cy + scale * 0.28f),
+        end = Offset(handX, handY),
+        strokeWidth = 3.dp.toPx()
+    )
+    drawCircle(
+        color = Color(0xFFFFD1A4),
+        radius = 4.dp.toPx(),
+        center = Offset(handX, handY)
+    )
+
+    // Speech bubble: "Welcome to 4D Menu!"
+    val speechLayout = textMeasurer.measure(
+        text = "Welcome to 4D Menu! ✨",
+        style = TextStyle(
+            color = Color(0xFF14110F),
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = PlusJakartaSansFamily
+        )
+    )
+    val bubbleW = speechLayout.size.width + 12.dp.toPx()
+    val bubbleH = speechLayout.size.height + 6.dp.toPx()
+    val bubbleX = cx - bubbleW * 0.5f
+    val bubbleY = cy - scale * 0.65f - bubbleH
+
+    drawRoundRect(
+        color = Color(0xFFF7F2EB),
+        topLeft = Offset(bubbleX, bubbleY),
+        size = Size(bubbleW, bubbleH),
+        cornerRadius = CornerRadius(6.dp.toPx())
+    )
+    drawText(
+        textLayoutResult = speechLayout,
+        topLeft = Offset(bubbleX + 6.dp.toPx(), bubbleY + 3.dp.toPx())
+    )
 }
 
 private fun DrawScope.drawStudioSpatialGrid(
@@ -268,7 +524,6 @@ private fun DrawScope.drawRoomTableSurface(
     tiltRatio: Float,
     yaw: Float
 ) {
-    // Draw warm walnut tabletop surface plane in lower 65% of viewport
     val horizonY = cy - h * 0.22f
     drawRect(
         brush = Brush.verticalGradient(
@@ -284,7 +539,6 @@ private fun DrawScope.drawRoomTableSurface(
         size = Size(w, h - horizonY)
     )
 
-    // Draw ARCore / WebXR spatial plane detection grid dots
     val dotSpacing = 28.dp.toPx()
     val cols = 9
     val rows = 6
@@ -333,7 +587,6 @@ private fun DrawScope.draw3DIngredientLayer(
     val topColor = applyExposure(Color(layer.topColorHex), exposure * 1.05f)
     val highlightColor = applyExposure(Color(layer.topColorHex), exposure * 1.22f)
 
-    // Side wall path connecting bottom ellipse and top ellipse
     val sidePath = Path().apply {
         moveTo(cx - rBot, yBottom)
         lineTo(cx - rTop, yTop)
@@ -355,7 +608,6 @@ private fun DrawScope.draw3DIngredientLayer(
         )
     )
 
-    // Bottom ellipse rim
     drawOval(
         color = baseColor,
         topLeft = Offset(cx - rBot, yBottom - rBot * tiltRatio),
@@ -363,7 +615,6 @@ private fun DrawScope.draw3DIngredientLayer(
     )
 
     if (layer.isDome) {
-        // Sculpted 3D dome cap (e.g., Brioche crown, Burrata, Tamago yolk, Ice sphere)
         val domeHeight = layerHeightPx * 1.25f
         val domePath = Path().apply {
             moveTo(cx - rTop, yBottom)
@@ -383,7 +634,6 @@ private fun DrawScope.draw3DIngredientLayer(
             )
         )
     } else {
-        // Top cap surface ellipse with subtle rotating specular sheen
         drawOval(
             brush = Brush.linearGradient(
                 colors = listOf(highlightColor, topColor, baseColor),
@@ -395,7 +645,6 @@ private fun DrawScope.draw3DIngredientLayer(
         )
     }
 
-    // Draw X-Ray Callout Line & Label when Explode Layers is active
     if (showCallout && layerIndex % 2 == 1) {
         val isRightSide = (layerIndex / 2) % 2 == 0
         val anchorX = if (isRightSide) cx + rTop * 0.85f else cx - rTop * 0.85f
@@ -477,11 +726,6 @@ private fun applyExposure(color: Color, factor: Float): Color {
     )
 }
 
-/**
- * Hardware-accelerated Android WebView running the self-hosted HTML5/CSS/JS + <model-viewer>
- * application from `assets/webar/`, serving `.glb` binary files over `https://ar-bistro.local/`
- * with proper CORS and MIME headers (`model/gltf-binary`).
- */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun EmbeddedWebArModelViewer(
