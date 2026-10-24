@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.ShoppingBag
@@ -46,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.model.AppDestination
 import com.example.ui.screens.BistroMenuScreen
 import com.example.ui.screens.LiveWebArSandboxScreen
+import com.example.ui.screens.ModelCreatorScreen
 import com.example.ui.screens.WebArCodeStudioScreen
 import com.example.ui.theme.BistroCardBorder
 import com.example.ui.theme.BistroElevated
@@ -104,6 +106,7 @@ fun AuraArBistroApp(
                     val selected = uiState.currentDestination == destination
                     val icon = when (destination) {
                         AppDestination.BISTRO_MENU -> Icons.Default.RestaurantMenu
+                        AppDestination.MODEL_CREATOR -> Icons.Default.CloudUpload
                         AppDestination.LIVE_WEBAR -> Icons.Default.ViewInAr
                         AppDestination.CODE_STUDIO -> Icons.Default.Code
                     }
@@ -163,6 +166,35 @@ fun AuraArBistroApp(
                         onOpenCodeStudio = {
                             viewModel.selectDestination(AppDestination.CODE_STUDIO)
                         }
+                    )
+                }
+
+                AppDestination.MODEL_CREATOR -> {
+                    ModelCreatorScreen(
+                        lastUploadReport = uiState.lastUploadReport,
+                        onImportCustomGlbUri = { uri, title, price, category, diam, height ->
+                            viewModel.importCustom3DModelUri(
+                                context = context,
+                                uri = uri,
+                                dishTitle = title,
+                                dishPrice = price,
+                                category = category,
+                                diameterCm = diam,
+                                heightCm = height
+                            )
+                        },
+                        onGenerate3DFromPhotoUri = { uri, title, price, category, diam, height ->
+                            viewModel.generate3DModelFromSinglePhoto(
+                                context = context,
+                                photoUri = uri,
+                                dishTitle = title,
+                                dishPrice = price,
+                                category = category,
+                                diameterCm = diam,
+                                heightCm = height
+                            )
+                        },
+                        onCreateStudioDish = viewModel::createCustomDishInStudio
                     )
                 }
 

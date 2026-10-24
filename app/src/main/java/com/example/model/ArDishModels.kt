@@ -5,6 +5,7 @@ import com.example.R
 
 enum class AppDestination(val title: String) {
     BISTRO_MENU("AR Menu"),
+    MODEL_CREATOR("3D Upload"),
     LIVE_WEBAR("Live WebAR"),
     CODE_STUDIO("WebAR Code")
 }
@@ -64,7 +65,8 @@ data class ArMenuDish(
     val allergens: List<String>,
     val cameraOrbit: String,
     val polyCount: String,
-    val layers3D: List<IngredientLayer3D>
+    val layers3D: List<IngredientLayer3D>,
+    val customPosterPath: String? = null
 ) {
     val formattedPrice: String get() = "$${String.format("%.2f", price)}"
     val dimensionsLabel: String get() = "Ø ${diameterCm.toInt()}cm × H ${heightCm}cm"

@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -481,12 +482,26 @@ private fun DishMenuCard(
                     .fillMaxWidth()
                     .height(185.dp)
             ) {
-                Image(
-                    painter = painterResource(id = dish.imageRes),
-                    contentDescription = dish.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                val customBitmap = androidx.compose.runtime.remember(dish.customPosterPath) {
+                    dish.customPosterPath?.let { path ->
+                        android.graphics.BitmapFactory.decodeFile(path)?.asImageBitmap()
+                    }
+                }
+                if (customBitmap != null) {
+                    Image(
+                        bitmap = customBitmap,
+                        contentDescription = dish.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = dish.imageRes),
+                        contentDescription = dish.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
                 Box(
                     modifier = Modifier

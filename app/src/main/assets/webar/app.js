@@ -535,6 +535,40 @@
   modalCloseBtn.addEventListener('click', closeDishARModal);
   modalBackdrop.addEventListener('click', closeDishARModal);
 
+  // Client-side .GLB File Upload Handler (Zero-Server Instant Preview)
+  const glbUploadInput = document.getElementById('glb-upload-input');
+  if (glbUploadInput) {
+    glbUploadInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const objectUrl = URL.createObjectURL(file);
+      const customDish = {
+        id: 'uploaded-' + Date.now(),
+        title: file.name.replace(/\.(glb|gltf|usdz)$/i, ''),
+        category: 'Burgers & Mains',
+        price: '$24.00',
+        calories: Math.round(file.size / 1024) + ' KB • Custom 3D Asset',
+        dimensions: 'Ø 18cm × H 10cm (1:1)',
+        description: 'Custom uploaded 3D model (' + file.name + ') loaded via Blob URL & Binary glTF 2.0 ArrayBuffer.',
+        glbSrc: objectUrl,
+        usdzSrc: objectUrl,
+        posterSrc: 'images/hero_bistro.jpg',
+        allergens: ['Custom .GLB Upload'],
+        cameraOrbit: '20deg 70deg 0.42m'
+      };
+      try {
+        const buffer = await file.arrayBuffer();
+        const parsed = parseGlbBinary(buffer);
+        glbMeshCache.set(objectUrl, parsed);
+      } catch (err) {
+        console.warn('Custom GLB parse fallback:', err);
+      }
+      MENU_ITEMS.unshift(customDish);
+      renderMenuGrid();
+      openDishARModal(customDish);
+    });
+  }
+
   // Expose public method so Native Android host can jump directly to a dish
   window.AuraWebAR = {
     openDishById: function (dishId) {

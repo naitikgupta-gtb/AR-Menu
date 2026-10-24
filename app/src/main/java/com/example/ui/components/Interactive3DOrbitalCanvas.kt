@@ -520,7 +520,6 @@ fun EmbeddedWebArModelViewer(
                         val url = request?.url ?: return null
                         if (url.host == "ar-bistro.local") {
                             val cleanPath = url.path?.trimStart('/')?.ifEmpty { "index.html" } ?: "index.html"
-                            val assetPath = "webar/$cleanPath"
                             val mimeType = when {
                                 cleanPath.endsWith(".html") -> "text/html"
                                 cleanPath.endsWith(".css") -> "text/css"
@@ -532,7 +531,15 @@ fun EmbeddedWebArModelViewer(
                                 else -> "application/octet-stream"
                             }
                             return try {
-                                val stream = context.assets.open(assetPath)
+                                val stream = if (cleanPath.startsWith("custom/")) {
+                                    val customFile = java.io.File(
+                                        context.filesDir,
+                                        "custom_models/${cleanPath.removePrefix("custom/")}"
+                                    )
+                                    java.io.FileInputStream(customFile)
+                                } else {
+                                    context.assets.open("webar/$cleanPath")
+                                }
                                 val headers = mapOf(
                                     "Access-Control-Allow-Origin" to "*",
                                     "Cache-Control" to "public, max-age=3600"
