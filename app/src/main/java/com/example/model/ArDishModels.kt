@@ -5,6 +5,7 @@ import com.example.R
 
 enum class AppDestination(val title: String) {
     BISTRO_MENU("4D Menu"),
+    TABLE_AR("Table AR"),
     TABLE_QR("Table QR"),
     MODEL_CREATOR("3D Upload"),
     LIVE_WEBAR("Live WebAR"),

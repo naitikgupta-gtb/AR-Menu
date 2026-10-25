@@ -112,6 +112,7 @@ fun BistroMenuScreen(
                     onSelectDietaryFilter = onSelectDietaryFilter,
                     onSearchQueryChange = onSearchQueryChange,
                     onOpenDishAr = onOpenDishAr,
+                    onLaunchTableAr = onLaunchNativeSceneViewer,
                     onOpenWebArSandbox = onOpenWebArSandbox,
                     onOpenTableQrStandee = onOpenTableQrStandee,
                     onOpenCodeStudio = onOpenCodeStudio,
@@ -155,6 +156,7 @@ fun BistroMenuScreen(
                     onSelectDietaryFilter = onSelectDietaryFilter,
                     onSearchQueryChange = onSearchQueryChange,
                     onOpenDishAr = onOpenDishAr,
+                    onLaunchTableAr = onLaunchNativeSceneViewer,
                     onOpenWebArSandbox = onOpenWebArSandbox,
                     onOpenTableQrStandee = onOpenTableQrStandee,
                     onOpenCodeStudio = onOpenCodeStudio,
@@ -199,6 +201,7 @@ private fun MenuCatalogList(
     onSelectDietaryFilter: (DietaryFilter) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onOpenDishAr: (ArMenuDish, ViewerMode) -> Unit,
+    onLaunchTableAr: (ArMenuDish) -> Unit,
     onOpenWebArSandbox: () -> Unit,
     onOpenTableQrStandee: () -> Unit,
     onOpenCodeStudio: () -> Unit,
@@ -387,7 +390,7 @@ private fun MenuCatalogList(
                     isPreloaded = dish.id in uiState.preloadedDishIds,
                     orderQty = uiState.tableOrderQuantities[dish.id] ?: 0,
                     onOpen3DOrbital = { onOpenDishAr(dish, ViewerMode.ORBITAL_3D) },
-                    onOpenRoomAr = { onOpenDishAr(dish, ViewerMode.ROOM_AR_TABLE) }
+                    onOpenRoomAr = { onLaunchTableAr(dish) }
                 )
             }
         }

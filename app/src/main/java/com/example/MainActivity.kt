@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.ShoppingBag
@@ -50,6 +51,7 @@ import com.example.model.ViewerMode
 import com.example.ui.screens.BistroMenuScreen
 import com.example.ui.screens.LiveWebArSandboxScreen
 import com.example.ui.screens.ModelCreatorScreen
+import com.example.ui.screens.RealTableArCameraScreen
 import com.example.ui.screens.TableQrStandeeScreen
 import com.example.ui.screens.WebArCodeStudioScreen
 import com.example.ui.theme.BistroCardBorder
@@ -93,51 +95,56 @@ fun AuraArBistroApp(
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = ObsidianBg,
         topBar = {
-            AuraTopBar(
-                totalOrderItems = uiState.totalOrderItems,
-                totalOrderPrice = uiState.totalOrderPrice,
-                onClearOrder = viewModel::clearTableOrder
-            )
+            if (uiState.currentDestination != AppDestination.TABLE_AR) {
+                AuraTopBar(
+                    totalOrderItems = uiState.totalOrderItems,
+                    totalOrderPrice = uiState.totalOrderPrice,
+                    onClearOrder = viewModel::clearTableOrder
+                )
+            }
         },
         bottomBar = {
-            NavigationBar(
-                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
-                containerColor = BistroSurface,
-                tonalElevation = 8.dp
-            ) {
-                AppDestination.entries.forEach { destination ->
-                    val selected = uiState.currentDestination == destination
-                    val icon = when (destination) {
-                        AppDestination.BISTRO_MENU -> Icons.Default.RestaurantMenu
-                        AppDestination.TABLE_QR -> Icons.Default.QrCode2
-                        AppDestination.MODEL_CREATOR -> Icons.Default.CloudUpload
-                        AppDestination.LIVE_WEBAR -> Icons.Default.ViewInAr
-                        AppDestination.CODE_STUDIO -> Icons.Default.Code
+            if (uiState.currentDestination != AppDestination.TABLE_AR) {
+                NavigationBar(
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+                    containerColor = BistroSurface,
+                    tonalElevation = 8.dp
+                ) {
+                    AppDestination.entries.forEach { destination ->
+                        val selected = uiState.currentDestination == destination
+                        val icon = when (destination) {
+                            AppDestination.BISTRO_MENU -> Icons.Default.RestaurantMenu
+                            AppDestination.TABLE_AR -> Icons.Default.ViewInAr
+                            AppDestination.TABLE_QR -> Icons.Default.QrCode2
+                            AppDestination.MODEL_CREATOR -> Icons.Default.CloudUpload
+                            AppDestination.LIVE_WEBAR -> Icons.Default.Devices
+                            AppDestination.CODE_STUDIO -> Icons.Default.Code
+                        }
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { viewModel.selectDestination(destination) },
+                            icon = {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = destination.title
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = destination.title,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = ObsidianBg,
+                                selectedTextColor = SaffronGold,
+                                indicatorColor = SaffronGold,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            modifier = Modifier.testTag("nav_tab_${destination.name.lowercase()}")
+                        )
                     }
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { viewModel.selectDestination(destination) },
-                        icon = {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = destination.title
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = destination.title,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = ObsidianBg,
-                            selectedTextColor = SaffronGold,
-                            indicatorColor = SaffronGold,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        modifier = Modifier.testTag("nav_tab_${destination.name.lowercase()}")
-                    )
                 }
             }
         }
@@ -179,12 +186,35 @@ fun AuraArBistroApp(
                     )
                 }
 
+                AppDestination.TABLE_AR -> {
+                    RealTableArCameraScreen(
+                        dish = uiState.selectedDish,
+                        allDishes = uiState.dishes,
+                        showChefMascot = uiState.showChefMascot,
+                        showNutritionHotspots = uiState.showNutritionHotspots,
+                        trueScale1To1 = uiState.trueScale1To1,
+                        lightingPreset = uiState.lightingPreset,
+                        onSelectDish = { newDish ->
+                            viewModel.openDishArViewer(newDish, ViewerMode.ROOM_AR_TABLE)
+                        },
+                        onToggleChefMascot = viewModel::toggleChefMascot,
+                        onToggleNutritionHotspots = viewModel::toggleNutritionHotspots,
+                        onToggleTrueScale = viewModel::toggleTrueScale,
+                        onAddToOrder = viewModel::addToTableOrder,
+                        onClose = {
+                            viewModel.selectDestination(AppDestination.BISTRO_MENU)
+                        },
+                        onOpenTableQrStandee = {
+                            viewModel.selectDestination(AppDestination.TABLE_QR)
+                        }
+                    )
+                }
+
                 AppDestination.TABLE_QR -> {
                     TableQrStandeeScreen(
                         selectedDish = uiState.selectedDish,
                         onLaunchDishAr = { dish ->
-                            viewModel.openDishArViewer(dish, ViewerMode.ROOM_AR_TABLE)
-                            viewModel.selectDestination(AppDestination.BISTRO_MENU)
+                            viewModel.launchNativeSceneViewerOrFallback(context, dish)
                         },
                         onOpenLiveWebAr = {
                             viewModel.selectDestination(AppDestination.LIVE_WEBAR)

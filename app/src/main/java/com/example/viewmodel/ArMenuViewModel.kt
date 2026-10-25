@@ -436,38 +436,46 @@ class ArMenuViewModel : ViewModel() {
     }
 
     fun launchNativeSceneViewerOrFallback(context: Context, dish: ArMenuDish) {
-        try {
-            val sceneViewerUrl = Uri.parse("https://arvr.google.com/scene-viewer/1.0").buildUpon()
-                .appendQueryParameter(
-                    "file",
-                    "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb"
-                )
-                .appendQueryParameter("mode", "ar_preferred")
-                .appendQueryParameter("title", "${dish.title} (${dish.dimensionsLabel})")
-                .appendQueryParameter("resizable", (!uiState.value.trueScale1To1).toString())
-                .build()
+        val sceneViewerUrl = Uri.parse("https://arvr.google.com/scene-viewer/1.0").buildUpon()
+            .appendQueryParameter(
+                "file",
+                "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb"
+            )
+            .appendQueryParameter("mode", "ar_preferred")
+            .appendQueryParameter("title", "${dish.title} (${dish.dimensionsLabel})")
+            .appendQueryParameter("resizable", (!uiState.value.trueScale1To1).toString())
+            .build()
 
+        var launchedExternal = false
+        try {
             val sceneViewerIntent = Intent(Intent.ACTION_VIEW).apply {
                 data = sceneViewerUrl
                 setPackage("com.google.android.googlequicksearchbox")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-
             context.startActivity(sceneViewerIntent)
-        } catch (_: ActivityNotFoundException) {
-            _uiState.update {
-                it.copy(
-                    viewerMode = ViewerMode.ROOM_AR_TABLE,
-                    statusBanner = "ARCore Scene Viewer not installed on device — Switched to Interactive Room Table AR Fallback (1:1 Scale)."
-                )
-            }
-        } catch (_: Exception) {
-            _uiState.update {
-                it.copy(
-                    viewerMode = ViewerMode.ROOM_AR_TABLE,
-                    statusBanner = "Switched to Interactive Room Table AR Fallback (1:1 Scale)."
-                )
-            }
+            launchedExternal = true
+        } catch (_: Exception) {}
+
+        if (!launchedExternal) {
+            try {
+                val genericIntent = Intent(Intent.ACTION_VIEW, sceneViewerUrl).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(genericIntent)
+                launchedExternal = true
+            } catch (_: Exception) {}
+        }
+
+        // Always switch in-app viewport to live table AR camera
+        _uiState.update {
+            it.copy(
+                selectedDish = dish,
+                currentDestination = AppDestination.TABLE_AR,
+                viewerMode = ViewerMode.ROOM_AR_TABLE,
+                isArModalOpen = false,
+                statusBanner = "Live AR Table Camera Active for ${dish.title}"
+            )
         }
     }
 
