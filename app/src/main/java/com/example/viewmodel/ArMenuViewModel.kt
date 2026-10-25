@@ -435,48 +435,21 @@ class ArMenuViewModel : ViewModel() {
         }
     }
 
-    fun launchNativeSceneViewerOrFallback(context: Context, dish: ArMenuDish) {
-        val sceneViewerUrl = Uri.parse("https://arvr.google.com/scene-viewer/1.0").buildUpon()
-            .appendQueryParameter(
-                "file",
-                "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF-Binary/Avocado.glb"
-            )
-            .appendQueryParameter("mode", "ar_preferred")
-            .appendQueryParameter("title", "${dish.title} (${dish.dimensionsLabel})")
-            .appendQueryParameter("resizable", (!uiState.value.trueScale1To1).toString())
-            .build()
-
-        var launchedExternal = false
-        try {
-            val sceneViewerIntent = Intent(Intent.ACTION_VIEW).apply {
-                data = sceneViewerUrl
-                setPackage("com.google.android.googlequicksearchbox")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(sceneViewerIntent)
-            launchedExternal = true
-        } catch (_: Exception) {}
-
-        if (!launchedExternal) {
-            try {
-                val genericIntent = Intent(Intent.ACTION_VIEW, sceneViewerUrl).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(genericIntent)
-                launchedExternal = true
-            } catch (_: Exception) {}
-        }
-
-        // Always switch in-app viewport to live table AR camera
+    fun openTableArForDish(dish: ArMenuDish) {
         _uiState.update {
             it.copy(
                 selectedDish = dish,
                 currentDestination = AppDestination.TABLE_AR,
                 viewerMode = ViewerMode.ROOM_AR_TABLE,
                 isArModalOpen = false,
-                statusBanner = "Live AR Table Camera Active for ${dish.title}"
+                statusBanner = "Live AR Table Active for ${dish.title}"
             )
         }
+    }
+
+    fun launchNativeSceneViewerOrFallback(context: Context, dish: ArMenuDish) {
+        // Direct switch to 4D In-App Table AR View
+        openTableArForDish(dish)
     }
 
     fun loadCodeArtifacts(context: Context): List<WebArCodeArtifact> {

@@ -101,6 +101,18 @@ fun Interactive3DOrbitalCanvas(
         return
     }
 
+    if (viewerMode == ViewerMode.ROOM_AR_TABLE && !explodeLayers) {
+        ArTable3DModelWebView(
+            dish = dish,
+            autoRotate = autoRotate,
+            showHotspots = showNutritionHotspots,
+            trueScale1To1 = trueScale1To1,
+            exposure = lightingPreset.exposure,
+            modifier = modifier
+        )
+        return
+    }
+
     var userYaw by remember(dish.id) { mutableFloatStateOf(0.35f) }
     var userPitch by remember(dish.id) { mutableFloatStateOf(0.48f) }
     var userZoom by remember(dish.id) { mutableFloatStateOf(1.0f) }
@@ -141,16 +153,22 @@ fun Interactive3DOrbitalCanvas(
     val textMeasurer = rememberTextMeasurer()
     val effectiveYaw = if (autoRotate) userYaw + continuousSpin else userYaw
 
-    Box(
-        modifier = modifier
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(lightingPreset.topBgHex),
-                        Color(lightingPreset.bottomBgHex)
-                    )
+    val bgModifier = if (viewerMode == ViewerMode.ROOM_AR_TABLE) {
+        Modifier.background(Color.Transparent)
+    } else {
+        Modifier.background(
+            Brush.radialGradient(
+                colors = listOf(
+                    Color(lightingPreset.topBgHex),
+                    Color(lightingPreset.bottomBgHex)
                 )
             )
+        )
+    }
+
+    Box(
+        modifier = modifier
+            .then(bgModifier)
             .pointerInput(dish.id) {
                 detectTransformGestures { _, pan, zoomChange, _ ->
                     userYaw += pan.x * 0.008f
@@ -525,20 +543,6 @@ private fun DrawScope.drawRoomTableSurface(
     yaw: Float
 ) {
     val horizonY = cy - h * 0.22f
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF2B1E16),
-                Color(0xFF3E2B1F),
-                Color(0xFF1E140E)
-            ),
-            startY = horizonY,
-            endY = h
-        ),
-        topLeft = Offset(0f, horizonY),
-        size = Size(w, h - horizonY)
-    )
-
     val dotSpacing = 28.dp.toPx()
     val cols = 9
     val rows = 6
@@ -817,6 +821,106 @@ fun EmbeddedWebArModelViewer(
                     null
                 )
             }
+        }
+    )
+}
+
+/**
+ * High-performance WebGL 3D Model Viewport for Dining Table AR:
+ * Uses Google <model-viewer> engine with completely transparent background
+ * to render the real 3D .glb food model with PBR lighting & floating AR nutrition tags.
+ */
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun ArTable3DModelWebView(
+    dish: ArMenuDish,
+    autoRotate: Boolean,
+    showHotspots: Boolean,
+    trueScale1To1: Boolean,
+    exposure: Float = 1.15f,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val glbModelPath = remember(dish.glbAsset) {
+        if (dish.glbAsset.startsWith("models/")) dish.glbAsset
+        else if (dish.glbAsset.startsWith("custom/")) dish.glbAsset
+        else "models/pizza.glb"
+    }
+
+    val hotspotsJson = remember(dish.nutritionHotspots) {
+        val list = dish.nutritionHotspots.map { hs ->
+            val posStr = "${hs.xOffsetRatio * 0.14f} 0.05 ${hs.yOffsetRatio * 0.14f}"
+            """{"name":"${hs.name.replace("\"", "\\\"")}","benefit1":"${hs.benefit1.replace("\"", "\\\"")}","emoji":"${hs.iconEmoji}","position":"$posStr"}"""
+        }
+        "[${list.joinToString(",")}]"
+    }
+
+    AndroidView(
+        modifier = modifier.testTag("ar_table_3d_webview"),
+        factory = { ctx ->
+            WebView(ctx).apply {
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.allowFileAccess = true
+                settings.allowContentAccess = true
+                settings.mediaPlaybackRequiresUserGesture = false
+                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+
+                webViewClient = object : WebViewClient() {
+                    override fun shouldInterceptRequest(
+                        view: WebView?,
+                        request: WebResourceRequest?
+                    ): WebResourceResponse? {
+                        val url = request?.url ?: return null
+                        if (url.host == "ar-bistro.local") {
+                            val cleanPath = url.path?.trimStart('/')?.ifEmpty { "table_model_viewer.html" } ?: "table_model_viewer.html"
+                            val mimeType = when {
+                                cleanPath.endsWith(".html") -> "text/html"
+                                cleanPath.endsWith(".css") -> "text/css"
+                                cleanPath.endsWith(".js") -> "application/javascript"
+                                cleanPath.endsWith(".glb") -> "model/gltf-binary"
+                                cleanPath.endsWith(".usdz") -> "model/vnd.usdz+zip"
+                                cleanPath.endsWith(".jpg") || cleanPath.endsWith(".jpeg") -> "image/jpeg"
+                                cleanPath.endsWith(".png") -> "image/png"
+                                else -> "application/octet-stream"
+                            }
+                            return try {
+                                val stream = if (cleanPath.startsWith("custom/")) {
+                                    val customFile = java.io.File(
+                                        context.filesDir,
+                                        "custom_models/${cleanPath.removePrefix("custom/")}"
+                                    )
+                                    java.io.FileInputStream(customFile)
+                                } else {
+                                    context.assets.open("webar/$cleanPath")
+                                }
+                                val headers = mapOf(
+                                    "Access-Control-Allow-Origin" to "*",
+                                    "Cache-Control" to "public, max-age=3600"
+                                )
+                                WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, stream)
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+                        return super.shouldInterceptRequest(view, request)
+                    }
+
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        val jsCmd = "if (window.ArTableBridge) { window.ArTableBridge.setDishModel('$glbModelPath', `$hotspotsJson`, $trueScale1To1); window.ArTableBridge.toggleAutoRotate($autoRotate); window.ArTableBridge.toggleHotspots($showHotspots); window.ArTableBridge.setExposure($exposure); }"
+                        view?.evaluateJavascript(jsCmd, null)
+                    }
+                }
+
+                loadUrl("https://ar-bistro.local/table_model_viewer.html")
+            }
+        },
+        update = { webView ->
+            val jsCmd = "if (window.ArTableBridge) { window.ArTableBridge.setDishModel('$glbModelPath', `$hotspotsJson`, $trueScale1To1); window.ArTableBridge.toggleAutoRotate($autoRotate); window.ArTableBridge.toggleHotspots($showHotspots); window.ArTableBridge.setExposure($exposure); }"
+            webView.evaluateJavascript(jsCmd, null)
         }
     )
 }

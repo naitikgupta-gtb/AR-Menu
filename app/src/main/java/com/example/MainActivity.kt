@@ -195,7 +195,7 @@ fun AuraArBistroApp(
                         trueScale1To1 = uiState.trueScale1To1,
                         lightingPreset = uiState.lightingPreset,
                         onSelectDish = { newDish ->
-                            viewModel.openDishArViewer(newDish, ViewerMode.ROOM_AR_TABLE)
+                            viewModel.openTableArForDish(newDish)
                         },
                         onToggleChefMascot = viewModel::toggleChefMascot,
                         onToggleNutritionHotspots = viewModel::toggleNutritionHotspots,
